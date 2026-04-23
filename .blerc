@@ -1,0 +1,105 @@
+# Enable the interactive dropdown menu when you hit Tab
+bleopt complete_menu_complete=1
+bleopt complete_auto_complete=1
+bleopt complete_menu_color=on
+bleopt complete_menu_style=linewise
+bleopt menu_desc_multicolumn_width=175
+
+function blerc/vim-mode-hook {
+    # in blehook keymap_vi_load
+    bleopt keymap_vi_mode_string_nmap=$'\e[1m-- NORMAL --\e[m'
+}
+blehook/eval-after-load keymap_vi blerc/vim-mode-hook
+
+# CUSTOM KEYBINDS: Map 'jk' to exit to Normal Mode
+ble-bind -m vi_imap -f 'j k' 'vi_imap/normal-mode'
+ble-bind -m vi_imap -f 'C-g' accept-line
+
+# Zsh-style history search based on current input
+ble-bind -f 'C-p' 'history-search-backward'
+ble-bind -f 'C-n' 'history-search-forward'
+
+# Optional: Match the arrow keys to this behavior as well
+ble-bind -f 'up'   'history-search-backward'
+ble-bind -f 'down' 'history-search-forward'
+
+# --- 1. Master Clipboard Sync Widget ---
+function ble/widget/yank-to-system-clipboard {
+  local text="${_ble_edit_kill_ring[0]:-${_ble_edit_reg_yank}}"
+  [[ -z "$text" ]] && return
+
+  # 1. Native Host Clipboard (Wayland / X11) FIRST
+  if [[ "$XDG_SESSION_TYPE" == "wayland" ]] && command -v wl-copy >/dev/null 2>&1; then
+    printf '%s' "$text" | wl-copy
+    # ble/widget/print -s "Copied to host via Wayland"
+    return 0
+  elif command -v xclip >/dev/null 2>&1; then
+    printf '%s' "$text" | xclip -selection clipboard
+    # ble/widget/print -s "Copied to host via X11"
+    return 0
+  fi
+
+  # 2. Fallback to Network/Terminal Clipboard (OSC 52)
+  local b64_text
+  b64_text=$(printf '%s' "$text" | base64 | tr -d '\n')
+  
+  if [[ -n "$TMUX" ]]; then
+    printf "\ePtmux;\e\e]52;c;%s\a\e\\" "$b64_text" > /dev/tty
+  else
+    printf "\e]52;c;%s\a" "$b64_text" > /dev/tty
+  fi
+}
+
+# --- Normal Mode ---
+# Yank normally (e.g., yy, yiw), then press Space followed by y to push to the system clipboard
+ble-bind -m vi_nmap -f 'SP y' yank-to-system-clipboard
+
+# --- Visual Mode ---
+# Pressing Space followed by y will simulate pressing 'y' (standard yank), 
+# dropping you to Normal mode, and then automatically typing ' y' to trigger the sync script.
+ble-bind -m vi_xmap -s 'SP y' 'y y'
+
+# --- Master Clipboard Paste Widget ---
+function ble/widget/paste-from-system-clipboard {
+  local clipboard_content=""
+
+  # 1. Native Host Clipboard (Wayland / X11)
+  if [[ "$XDG_SESSION_TYPE" == "wayland" ]] && command -v wl-paste >/dev/null 2>&1; then
+    clipboard_content=$(wl-paste --no-newline)
+  elif command -v xclip >/dev/null 2>&1; then
+    clipboard_content=$(xclip -selection clipboard -o)
+  elif command -v pbpaste >/dev/null 2>&1; then
+    clipboard_content=$(pbpaste)
+  else
+    ble/widget/print -s "Error: No supported clipboard tool (wl-paste, xclip) found."
+    return 1
+  fi
+
+  [[ -z "$clipboard_content" ]] && return 0
+
+  # 2. Safely insert at cursor position
+  ble/widget/insert-string "$clipboard_content"
+}
+
+# --- Normal Mode ---
+# Press Space followed by p to paste from system clipboard
+ble-bind -m vi_nmap -f 'SP p' paste-from-system-clipboard
+
+# --- Visual Mode ---
+# Simulates pressing 'd' (deletes selection, drops to Normal mode), 
+# then types ' p' (Space + p) to trigger the Normal mode paste widget above.
+ble-bind -m vi_xmap -s 'SP p' 'd p'
+
+# --- 2. The ble.sh Screen Wrapper ---
+ble/widget/my_conda_toggle() {
+    ble/term/leave-for-widget
+    conda_toggle_env
+    ble/term/enter-for-widget
+    ble/prompt/clear
+    ble/prompt/update
+    ble/textarea#redraw
+}
+
+# Conda toggle
+ble-bind -m vi_imap -f 'M-t' my_conda_toggle
+ble-bind -m vi_nmap -f 'M-t' my_conda_toggle
