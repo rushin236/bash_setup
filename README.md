@@ -51,7 +51,7 @@ Not currently supported:
 
 ```bash
 cd ~
-git clone <your-repo-url> bash_setup
+git clone https://github.com/rushin236/bash_setup.git
 ```
 
 ---
