@@ -1,4 +1,12 @@
 # ~/.bashrc.d/source/02-functions.sh
+has_internet() {
+  # Try to fetch headers from GitHub API silently, timeout after 3 seconds
+  if curl -Is --connect-timeout 3 https://api.github.com >/dev/null 2>&1; then
+    return 0
+  else
+    return 1
+  fi
+}
 
 # --- INTERACTIVE CONDA TOGGLE ---
 conda_toggle_env() {
