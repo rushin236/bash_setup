@@ -1,51 +1,30 @@
-# Initial source
-source ~/.bashrc.d/install/00-foundation.sh
-source ~/.bashrc.d/install/01-fetch.sh
-source ~/.bashrc.d/install/02-tool.sh
+# ~/.bashrc
 
-source ~/.bashrc.d/source/00-path.sh
-source ~/.bashrc.d/source/01-env.sh
-source ~/.bashrc.d/source/02-functions.sh
-source ~/.bashrc.d/source/03-aliases.sh
+# 1. Foundation
+if [[ -f "$HOME/.bashrc.d/00-foundation.sh" ]]; then
+  source "$HOME/.bashrc.d/00-foundation.sh"
+fi
 
-# Install update tools
-source ~/.bashrc.d/install/10-fzf.sh
-source ~/.bashrc.d/install/11-starship.sh
-source ~/.bashrc.d/install/12-carapace.sh
-source ~/.bashrc.d/install/13-blesh.sh
+if [[ -f "$HOME/.bashrc.d/01-fetch.sh" ]]; then
+  source "$HOME/.bashrc.d/01-fetch.sh"
+fi
 
-# Install once tools
-# source ~/.bashrc.d/install/20-miniconda.sh
-source ~/.bashrc.d/install/21-nvm.sh
-source ~/.bashrc.d/install/22-nvim.sh
-source ~/.bashrc.d/install/23-rust.sh
-source ~/.bashrc.d/install/24-go.sh
-source ~/.bashrc.d/install/25-ripgrep.sh
-source ~/.bashrc.d/install/26-fd.sh
-source ~/.bashrc.d/install/27-stylua.sh
-source ~/.bashrc.d/install/28-tree-sitter.sh
-source ~/.bashrc.d/install/28-tree-sitter.sh
-# source ~/.bashrc.d/install/29-rust-extra.sh
-source ~/.bashrc.d/install/30-shellcheck.sh
-source ~/.bashrc.d/install/31-shfmt.sh
-source ~/.bashrc.d/install/32-markdown-toc.sh
-# source ~/.bashrc.d/install/33-ruby.sh
-# source ~/.bashrc.d/install/34-composer.sh
-# source ~/.bashrc.d/install/35-java.sh
-# source ~/.bashrc.d/install/36-julia.sh
+# 2. Tool CLI Engine
+if [[ -f "$HOME/.bashrc.d/02-tool.sh" ]]; then
+  source "$HOME/.bashrc.d/02-tool.sh"
+fi
 
-# Source all tool scripts first
-source ~/.bashrc.d/source/10-fzf.sh
-source ~/.bashrc.d/source/11-starship.sh
-source ~/.bashrc.d/source/12-carapace.sh
-source ~/.bashrc.d/source/13-blesh.sh
-source ~/.bashrc.d/source/20-miniconda.sh
-source ~/.bashrc.d/source/21-nvm.sh
+# 3. Core Environment
+if [[ -d "$HOME/.bashrc.d/source" ]]; then
+  for file in "$HOME/.bashrc.d/source"/*.sh; do
+    [[ -f "$file" ]] && source "$file"
+  done
+fi
 
-source_blesh
-source_miniconda
-source_nvm
-source_fzf
-source_carapace
-source_starship
-attach_blesh
+# 4. Package Initializers & Environment Sync
+if [[ -d "$HOME/.bashrc.d/source-pkg" ]]; then
+  # Because of the numbers, 00-blesh-init runs first, and 99-blesh-attach runs last!
+  for file in "$HOME/.bashrc.d/source-pkg"/*.sh; do
+    [[ -f "$file" ]] && source "$file"
+  done
+fi

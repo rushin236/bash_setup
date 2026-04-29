@@ -6,9 +6,5 @@ add_path() {
 }
 
 add_path "$HOME/.local/bin"
-add_path "$HOME/.cargo/bin"
-add_path "$HOME/.local/opt/go/bin"
-add_path "$HOME/.rbenv/bin"
-add_path "$HOME/.rbenv/shims"
 
 export PATH
