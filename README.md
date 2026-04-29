@@ -1,5 +1,4 @@
 
-````markdown
 # bash_setup
 
 A portable Bash environment bootstrap for Linux systems.
@@ -53,7 +52,7 @@ Not currently supported:
 ```bash
 cd ~
 git clone <your-repo-url> bash_setup
-````
+```
 
 ---
 
