@@ -51,8 +51,8 @@ log_recent_dir() {
   LAST_LOGGED_DIR="$DIR"
   grep -Fxv "$DIR" "$FILE" 2>/dev/null >"$FILE.tmp"
   echo "$DIR" >>"$FILE.tmp"
-  mv "$FILE.tmp" "$FILE"
-  tail -n 50 "$FILE" >"$FILE.tmp" && mv "$FILE.tmp" "$FILE"
+  mv "$FILE.tmp" "$FILE" >/dev/null 2>&1
+  tail -n 50 "$FILE" >"$FILE.tmp" && mv "$FILE.tmp" "$FILE" >/dev/null 2>&1
 }
 
 # --- PROMPT COMMAND ---
