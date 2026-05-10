@@ -228,6 +228,3 @@ MIT
 # Author
 
 Rushikesh Shinde
-
-```
-```
