@@ -25,6 +25,7 @@ cp ~/project/.bashrc ~/.bashrc
 cp ~/project/.bash_profile ~/.bash_profile
 cp ~/project/.blerc ~/.blerc
 cp -r ~/project/.bashrc.d ~/.bashrc.d
+cp ~/project/.config/starship.toml ~/.config
 . ~/.bashrc
 
 echo "--- INSTALLATION ---"
