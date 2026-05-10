@@ -126,6 +126,13 @@ cp ~/bash_setup/.bashrc ~/.bashrc
 cp ~/bash_setup/.bash_profile ~/.bash_profile
 cp ~/bash_setup/.blerc ~/.blerc
 cp -r ~/bash_setup/.bashrc.d ~/.bashrc.d
+cp ~/project/.config/starship.toml ~/.config
+```
+
+or Install gnu stow and run following
+
+```bash
+stow bash_setup
 ```
 
 ---
