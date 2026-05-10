@@ -52,12 +52,12 @@ pkg_micromamba() {
 
         log "Downloading Micromamba..."
         if curl -fsSL "$URL" | tar -xvj -C "$TMP_DIR" "bin/micromamba" >/dev/null 2>&1; then
-          mv "$TMP_DIR/bin/micromamba" "$BIN"
+          mv "$TMP_DIR/bin/micromamba" "$BIN" >/dev/null 2>&1
           chmod +x "$BIN"
           touch "$CHECK"
           log "Micromamba ready"
         fi
-        rm -rf "$TMP_DIR"
+        rm -rf "$TMP_DIR" >/dev/null 2>&1
       fi
       ;;
     remove)

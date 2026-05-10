@@ -54,20 +54,20 @@ pkg_go() {
         mkdir -p "$TMP_DIR"
 
         if curl -fsSL "$URL" | tar -xzf - -C "$TMP_DIR" 2>/dev/null; then
-          rm -rf "$DIR"
-          mv "$TMP_DIR/go" "$DIR"
+          rm -rf "$DIR" >/dev/null 2>&1
+          mv "$TMP_DIR/go" "$DIR" >/dev/null 2>&1
 
           touch "$CHECK"
           log "Go ready"
         else
           log "Failed to download Go."
         fi
-        rm -rf "$TMP_DIR"
+        rm -rf "$TMP_DIR" >/dev/null 2>&1
       fi
       ;;
     remove)
       log "Removing Go..."
-      rm -rf "$DIR" "$CHECK"
+      rm -rf "$DIR" "$CHECK" >/dev/null 2>&1
       log "Go removed"
       ;;
   esac

@@ -43,7 +43,7 @@ pkg_rust() {
       if command -v rustup >/dev/null 2>&1; then
         rustup self uninstall -y >/dev/null 2>&1
       fi
-      rm -rf "$HOME/.cargo" "$HOME/.rustup" "$CHECK"
+      rm -rf "$HOME/.cargo" "$HOME/.rustup" "$CHECK" >/dev/null 2>&1
       log "Rust removed"
       ;;
   esac

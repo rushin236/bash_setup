@@ -36,7 +36,7 @@ pkg_ruby() {
       ;;
     remove)
       log "Removing rbenv and managed Ruby versions..."
-      rm -rf "$RBENV" "$CHECK"
+      rm -rf "$RBENV" "$CHECK" >/dev/null 2>&1
       log "Ruby removed"
       ;;
   esac

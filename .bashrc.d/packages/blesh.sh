@@ -40,7 +40,7 @@ pkg_blesh() {
         log "Installing/Updating ble.sh..."
 
         if [[ ! -d "$DIR/.git" ]]; then
-          rm -rf "$DIR"
+          rm -rf "$DIR" >/dev/null 2>&1
           git clone --recursive --depth 1 https://github.com/akinomyoga/ble.sh.git "$DIR" >/dev/null 2>&1 || return 1
         else
           (cd "$DIR" && git pull --rebase && git submodule update --init --recursive) >/dev/null 2>&1 || return 1
@@ -55,7 +55,7 @@ pkg_blesh() {
 
     remove)
       log "Removing ble.sh..."
-      rm -rf "$DIR" "$SHARE_DIR" "$CHECK"
+      rm -rf "$DIR" "$SHARE_DIR" "$CHECK" >/dev/null 2>&1
       log "ble.sh removed"
       ;;
   esac

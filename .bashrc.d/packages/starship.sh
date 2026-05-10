@@ -59,9 +59,9 @@ pkg_starship() {
         mkdir -p "$TMP_DIR"
 
         if curl -fsSL "$URL" | tar -xzf - -C "$TMP_DIR" 2>/dev/null; then
-          rm -rf "$DIR"
+          rm -rf "$DIR" >/dev/null 2>&1
           mkdir -p "$DIR"
-          mv "$TMP_DIR/starship" "$DIR/starship"
+          mv "$TMP_DIR/starship" "$DIR/starship" >/dev/null 2>&1
           ln -sf "$DIR/starship" "$BIN"
 
           if [ ! -f "$HOME/.config/starship.toml" ]; then
@@ -72,12 +72,12 @@ pkg_starship() {
           touch "$CHECK"
           log "Starship ready"
         fi
-        rm -rf "$TMP_DIR"
+        rm -rf "$TMP_DIR" >/dev/null 2>&1
       fi
       ;;
     remove)
       log "Removing Starship..."
-      rm -rf "$DIR" "$BIN" "$CHECK"
+      rm -rf "$DIR" "$BIN" "$CHECK" >/dev/null 2>&1
       log "Starship removed"
       ;;
   esac

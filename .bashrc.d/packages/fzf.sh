@@ -38,7 +38,7 @@ pkg_fzf() {
         log "Installing/Updating fzf..."
 
         if [[ ! -d "$DIR/.git" ]]; then
-          rm -rf "$DIR"
+          rm -rf "$DIR" >/dev/null 2>&1
           git clone --depth 1 https://github.com/junegunn/fzf.git "$DIR" >/dev/null 2>&1 || return 1
         else
           (cd "$DIR" && git pull --rebase) >/dev/null 2>&1 || return 1
@@ -53,7 +53,7 @@ pkg_fzf() {
       ;;
     remove)
       log "Removing fzf..."
-      rm -rf "$DIR" "$BIN" "$CHECK"
+      rm -rf "$DIR" "$BIN" "$CHECK" >/dev/null 2>&1
       log "fzf removed"
       ;;
   esac

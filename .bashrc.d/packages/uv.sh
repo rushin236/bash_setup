@@ -53,19 +53,19 @@ pkg_uv() {
 
         mkdir -p "$TMP_DIR"
         if curl -fsSL "$URL" | tar -xzf - -C "$TMP_DIR" --strip-components=1 2>/dev/null; then
-          mv "$TMP_DIR/uv" "$BIN"
+          mv "$TMP_DIR/uv" "$BIN" >/dev/null 2>&1
           mv "$TMP_DIR/uvx" "$HOME/.local/bin/uvx" 2>/dev/null || true
           touch "$CHECK"
           log "uv ready"
         else
           log "Failed to download uv."
         fi
-        rm -rf "$TMP_DIR"
+        rm -rf "$TMP_DIR" >/dev/null 2>&1
       fi
       ;;
     remove)
       log "Removing uv..."
-      rm -f "$BIN" "$HOME/.local/bin/uvx" "$CHECK"
+      rm -rf "$BIN" "$HOME/.local/bin/uvx" "$CHECK" >/dev/null 2>&1
       log "uv removed. (Environments in ~/.local/share/uv retained)"
       ;;
   esac
