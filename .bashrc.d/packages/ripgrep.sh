@@ -63,15 +63,15 @@ pkg_ripgrep() {
         log "Downloading ripgrep $REMOTE_VER..."
 
         if curl -fsSL "$URL" | tar -xzf - --strip-components=1 -C "$TMP_DIR" 2>/dev/null; then
-          rm -rf "$DIR"
-          mv "$TMP_DIR" "$DIR"
+          rm -rf "$DIR" >/dev/null 2>&1
+          mv "$TMP_DIR" "$DIR" >/dev/null 2>&1
           ln -sf "$DIR/rg" "$BIN"
 
           touch "$CHECK"
           log "ripgrep ready"
         else
           log "Failed to download ripgrep. Current version retained."
-          rm -rf "$TMP_DIR"
+          rm -rf "$TMP_DIR" >/dev/null 2>&1
           return 1
         fi
       fi
@@ -79,7 +79,7 @@ pkg_ripgrep() {
 
     remove)
       log "Removing ripgrep..."
-      rm -rf "$DIR" "$BIN" "$CHECK"
+      rm -rf "$DIR" "$BIN" "$CHECK" >/dev/null 2>&1
       log "ripgrep removed"
       ;;
   esac

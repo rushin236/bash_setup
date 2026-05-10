@@ -34,15 +34,15 @@ pkg_fd() {
         mkdir -p "$TMP_DIR"
 
         if curl -fsSL "https://github.com/sharkdp/fd/releases/download/v10.4.2/$FILE" | tar -xzf - --strip-components=1 -C "$TMP_DIR" 2>/dev/null; then
-          rm -rf "$DIR"
-          mv "$TMP_DIR" "$DIR"
+          rm -rf "$DIR" >/dev/null 2>&1
+          mv "$TMP_DIR" "$DIR" >/dev/null 2>&1
           ln -sf "$DIR/fd" "$BIN"
 
           touch "$CHECK"
           log "fd ready and updated"
         else
           log "Failed to download fd. Current version retained."
-          rm -rf "$TMP_DIR"
+          rm -rf "$TMP_DIR" >/dev/null 2>&1
           return 1
         fi
       fi
@@ -50,7 +50,7 @@ pkg_fd() {
 
     remove)
       log "Removing fd..."
-      rm -rf "$DIR" "$BIN" "$CHECK"
+      rm -rf "$DIR" "$BIN" "$CHECK" >/dev/null 2>&1
       log "fd removed"
       ;;
   esac

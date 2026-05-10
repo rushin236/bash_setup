@@ -40,7 +40,7 @@ pkg_php() {
         local URL="https://github.com/phpbrew/phpbrew/releases/latest/download/phpbrew.phar"
 
         if curl -fsSL "$URL" -o "$TMP_BIN" 2>/dev/null; then
-          mv "$TMP_BIN" "$BIN"
+          mv "$TMP_BIN" "$BIN" >/dev/null 2>&1
           chmod +x "$BIN"
 
           export PHPBREW_ROOT="$PHPBREW_ROOT"
@@ -58,7 +58,7 @@ pkg_php() {
 
     remove)
       log "Removing phpbrew and managed PHP versions..."
-      rm -rf "$PHPBREW_ROOT" "$BIN" "$CHECK"
+      rm -rf "$PHPBREW_ROOT" "$BIN" "$CHECK" >/dev/null 2>&1
       log "phpbrew removed"
       ;;
   esac

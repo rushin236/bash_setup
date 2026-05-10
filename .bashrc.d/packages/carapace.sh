@@ -74,10 +74,10 @@ pkg_carapace() {
         mkdir -p "$TMP_DIR"
 
         if curl -fsSL "$URL" | tar -xzf - -C "$TMP_DIR" carapace 2>/dev/null; then
-          rm -rf "$DIR"
+          rm -rf "$DIR" >/dev/null 2>&1
           mkdir -p "$DIR"
 
-          mv "$TMP_DIR/carapace" "$DIR/carapace"
+          mv "$TMP_DIR/carapace" "$DIR/carapace" >/dev/null 2>&1
           chmod +x "$DIR/carapace"
 
           ln -sf "$DIR/carapace" "$BIN"
@@ -88,12 +88,12 @@ pkg_carapace() {
           log "Failed to download Carapace."
         fi
 
-        rm -rf "$TMP_DIR"
+        rm -rf "$TMP_DIR" >/dev/null 2>&1
       fi
       ;;
     remove)
       log "Removing Carapace..."
-      rm -rf "$DIR" "$BIN" "$CHECK"
+      rm -rf "$DIR" "$BIN" "$CHECK" >/dev/null 2>&1
       log "Carapace removed"
       ;;
   esac

@@ -62,15 +62,15 @@ pkg_nvim() {
         log "Downloading Neovim $REMOTE_VER..."
 
         if curl -fsSL "$URL" | tar -xzf - -C "$TMP_DIR" --strip-components=1 2>/dev/null; then
-          rm -rf "$NVIM_DIR"
-          mv "$TMP_DIR" "$NVIM_DIR"
+          rm -rf "$NVIM_DIR" >/dev/null 2>&1
+          mv "$TMP_DIR" "$NVIM_DIR" >/dev/null 2>&1
           ln -sf "$NVIM_DIR/bin/nvim" "$BIN_DIR/nvim"
 
           touch "$CHECK_FILE"
           log "Neovim ready"
         else
           log "Failed to download Neovim. Current version retained."
-          rm -rf "$TMP_DIR"
+          rm -rf "$TMP_DIR" >/dev/null 2>&1
           return 1
         fi
       fi
@@ -78,7 +78,7 @@ pkg_nvim() {
 
     remove)
       log "Removing Neovim..."
-      rm -rf "$NVIM_DIR" "$BIN_DIR/nvim" "$CHECK_FILE"
+      rm -rf "$NVIM_DIR" "$BIN_DIR/nvim" "$CHECK_FILE" >/dev/null 2>&1
       log "Neovim removed"
       ;;
   esac

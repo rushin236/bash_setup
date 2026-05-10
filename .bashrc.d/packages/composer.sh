@@ -26,7 +26,7 @@ pkg_composer() {
         log "Downloading Composer..."
 
         if curl -fsSL https://getcomposer.org/installer | php -- --install-dir="/tmp" --filename="$(basename "$TMP_BIN")" >/dev/null 2>&1; then
-          mv "$TMP_BIN" "$BIN"
+          mv "$TMP_BIN" "$BIN" >/dev/null 2>&1
           chmod +x "$BIN"
           touch "$CHECK"
           log "Composer ready"

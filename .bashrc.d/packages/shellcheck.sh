@@ -55,8 +55,8 @@ pkg_shellcheck() {
         mkdir -p "$TMP_DIR"
 
         if curl -fsSL "$URL" | tar -xJf - --strip-components=1 -C "$TMP_DIR" 2>/dev/null; then
-          rm -rf "$DIR"
-          mv "$TMP_DIR" "$DIR"
+          rm -rf "$DIR" >/dev/null 2>&1
+          mv "$TMP_DIR" "$DIR" >/dev/null 2>&1
           ln -sf "$DIR/shellcheck" "$BIN"
 
           touch "$CHECK"
@@ -64,12 +64,12 @@ pkg_shellcheck() {
         else
           log "Failed to download Shellcheck."
         fi
-        rm -rf "$TMP_DIR"
+        rm -rf "$TMP_DIR" >/dev/null 2>&1
       fi
       ;;
     remove)
       log "Removing Shellcheck..."
-      rm -rf "$DIR" "$BIN" "$CHECK"
+      rm -rf "$DIR" "$BIN" "$CHECK" >/dev/null 2>&1
       log "Shellcheck removed"
       ;;
   esac

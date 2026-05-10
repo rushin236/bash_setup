@@ -46,7 +46,7 @@ pkg_java() {
 
     remove)
       log "Removing SDKMAN! and all managed Java versions..."
-      rm -rf "$SDK_DIR" "$CHECK"
+      rm -rf "$SDK_DIR" "$CHECK" >/dev/null 2>&1
       log "SDKMAN! removed"
       ;;
   esac

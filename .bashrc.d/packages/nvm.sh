@@ -65,7 +65,7 @@ pkg_nvm() {
 
     remove)
       log "Removing NVM and all installed Node versions..."
-      rm -rf "$NVM_DIR" "$CHECK"
+      rm -rf "$NVM_DIR" "$CHECK" >/dev/null 2>&1
       log "NVM removed"
       ;;
   esac

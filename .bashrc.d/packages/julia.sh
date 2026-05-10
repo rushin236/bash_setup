@@ -66,15 +66,15 @@ pkg_julia() {
         log "Downloading Julia $REMOTE_VER..."
 
         if curl -fsSL "$URL" | tar -xzf - -C "$TMP_DIR" --strip-components=1 2>/dev/null; then
-          rm -rf "$DIR"
-          mv "$TMP_DIR" "$DIR"
+          rm -rf "$DIR" >/dev/null 2>&1
+          mv "$TMP_DIR" "$DIR" >/dev/null 2>&1
           ln -sf "$DIR/bin/julia" "$BIN"
 
           touch "$CHECK"
           log "Julia ready"
         else
           log "Failed to download Julia. Current version retained."
-          rm -rf "$TMP_DIR"
+          rm -rf "$TMP_DIR" >/dev/null 2>&1
           return 1
         fi
       fi
@@ -82,7 +82,7 @@ pkg_julia() {
 
     remove)
       log "Removing Julia..."
-      rm -rf "$DIR" "$BIN" "$CHECK"
+      rm -rf "$DIR" "$BIN" "$CHECK" >/dev/null 2>&1
       log "Julia removed"
       ;;
   esac
