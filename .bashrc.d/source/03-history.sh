@@ -1,3 +1,5 @@
+# ~/.bashrc.d/source/03-history.sh
+
 # --- History ---
 export HISTFILE="$HOME/.bash_history"
 export HISTSIZE=500000
@@ -10,8 +12,4 @@ shopt -s histappend
 shopt -s cmdhist
 shopt -s lithist
 
-PROMPT_COMMAND+=(
-  "history -a"
-  "history -n"
-  "log_recent_dir"
-)
+PROMPT_COMMAND='history -a; history -n; log_recent_dir'

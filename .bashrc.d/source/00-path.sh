@@ -1,3 +1,5 @@
+# ~/.bashrc.d/source/00-path.sh
+
 add_path() {
   case ":$PATH:" in
     *":$1:"*) ;;
