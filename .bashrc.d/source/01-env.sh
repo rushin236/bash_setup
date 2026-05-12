@@ -1,4 +1,4 @@
-# ~/.bashrc.d/source/00-env.sh
+# ~/.bashrc.d/source/01-env.sh
 
 # --- Display & UI ---
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline --color='header:italic'"

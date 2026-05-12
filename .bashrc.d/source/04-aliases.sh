@@ -1,4 +1,4 @@
-# ~/.bashrc.d/source/01-aliases.sh
+# ~/.bashrc.d/source/04-aliases.sh
 
 alias c='clear'
 alias q='exit'

@@ -1,4 +1,5 @@
 # ~/.bashrc.d/source/02-functions.sh
+
 has_internet() {
   # Try to fetch headers from GitHub API silently, timeout after 3 seconds
   if curl -Is --connect-timeout 3 https://api.github.com >/dev/null 2>&1; then
@@ -71,13 +72,15 @@ conda_toggle_env() {
 
 # --- DIRECTORY LOGGER ---
 log_recent_dir() {
-  local DIR="$PWD"
-  local FILE="$HOME/.recent_dirs"
-  [[ "$DIR" == "$LAST_LOGGED_DIR" ]] && return
+  local file="$HOME/.recent_dirs"
 
-  LAST_LOGGED_DIR="$DIR"
-  grep -Fxv "$DIR" "$FILE" 2>/dev/null >"$FILE.tmp"
-  echo "$DIR" >>"$FILE.tmp"
-  mv "$FILE.tmp" "$FILE" >/dev/null 2>&1
-  tail -n 50 "$FILE" >"$FILE.tmp" && mv "$FILE.tmp" "$FILE" >/dev/null 2>&1
+  [[ "$PWD" == "$LAST_LOGGED_DIR" ]] && return
+  LAST_LOGGED_DIR="$PWD"
+
+  {
+    printf '%s\n' "$PWD"
+    tac "$file" 2>/dev/null
+  } | awk '!seen[$0]++' | head -n 50 | tac >"$file.tmp"
+
+  mv "$file.tmp" "$file"
 }

@@ -3,9 +3,10 @@
 export NVM_DIR="$HOME/.nvm"
 [[ -s "$NVM_DIR/nvm.sh" ]] || return 0
 
-# Alpine musl builds
-[[ -f /etc/alpine-release ]] &&
+# Alpine Linux (musl) support
+if [[ -f /etc/alpine-release ]]; then
   export NVM_NODEJS_ORG_MIRROR="https://unofficial-builds.nodejs.org/download/release"
+fi
 
 source "$NVM_DIR/nvm.sh"
 
