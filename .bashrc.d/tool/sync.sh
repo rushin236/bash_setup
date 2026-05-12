@@ -87,8 +87,8 @@ _sync_python() {
 
   log "Syncing Python $ver in env user"
 
-  micromamba create -y -n user -c conda-forge "python=$ver" -r "$root" >/dev/null 2>&1 ||
-    micromamba install -y -n user -c conda-forge "python=$ver" -r "$root"
+  micromamba create -y -n user -c conda-forge "python=$ver" pip -r "$root" >/dev/null 2>&1 ||
+    micromamba install -y -n user -c conda-forge "python=$ver" pip -r "$root"
 }
 
 _sync_java() {

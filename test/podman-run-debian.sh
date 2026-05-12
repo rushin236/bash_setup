@@ -27,6 +27,7 @@ cp -r /workspace /home/tester/project && chown -R tester:tester /home/tester
 
 su - tester -c 'bash -l' <<'INNER_EOF'
 echo "--- COPYING FILES ---"
+mkdir -p ~/.config
 cp ~/project/.bashrc ~/.bashrc
 cp ~/project/.bash_profile ~/.bash_profile
 cp ~/project/.blerc ~/.blerc
@@ -48,7 +49,11 @@ done
 
 echo "--- TIMING ---"
 bash -lc exit
-for i in {1..3}; do echo "Run #$i:"; time bash -lc exit; echo ; done
+for i in {1..3}; do 
+  echo "Run #$i:"
+  time bash -ic exit
+  echo
+done
 INNER_EOF
 EOF
 }
