@@ -10,36 +10,63 @@ has_internet() {
 
 # --- INTERACTIVE CONDA TOGGLE ---
 conda_toggle_env() {
-  if ! command -v conda &>/dev/null; then
+  local backend=""
+  local current_env=""
+  local selected_env=""
+  local deactivate_opt="[Deactivate -> System Python]"
+
+  # Prefer micromamba
+  if command -v micromamba >/dev/null 2>&1; then
+    backend="micromamba"
+    current_env="${CONDA_DEFAULT_ENV:-}"
+
+  elif command -v conda >/dev/null 2>&1; then
+    backend="conda"
+    current_env="${CONDA_DEFAULT_ENV:-}"
+
+  else
+    echo "No micromamba or conda found"
     return 1
   fi
-
-  local current_env="${CONDA_DEFAULT_ENV:-}"
-  local selected_env
-  local deactivate_opt="[Deactivate Conda -> System Python]"
 
   selected_env=$(
     (
       echo "$deactivate_opt"
-      conda env list | awk '{print $1}' | grep -vE '^(#|$)'
-    ) | fzf --height 40% --layout=reverse --border --prompt="Select Conda Env: "
+
+      "$backend" env list 2>/dev/null |
+        awk '
+          /^[^#]/ && NF {
+            print $1
+          }
+        ' |
+        grep -vE '^(base|\*)$'
+    ) | sort -u |
+      fzf \
+        --height 40% \
+        --layout=reverse \
+        --border \
+        --prompt="Select Env [$backend]: "
   )
 
   [[ -z "$selected_env" ]] && return 0
 
+  # Full deactivate
   if [[ "$selected_env" == "$deactivate_opt" ]]; then
     while [[ -n "$CONDA_DEFAULT_ENV" ]]; do
-      conda deactivate
+      "$backend" deactivate >/dev/null 2>&1 || break
     done
     return 0
   fi
 
-  if [[ "$selected_env" == "$current_env" ]]; then
-    return 0
+  # Already active
+  [[ "$selected_env" == "$current_env" ]] && return 0
+
+  # Switch envs cleanly
+  if [[ -n "$current_env" ]]; then
+    "$backend" deactivate >/dev/null 2>&1
   fi
 
-  [[ -n "$current_env" ]] && conda deactivate
-  conda activate "$selected_env"
+  "$backend" activate "$selected_env"
 }
 
 # --- DIRECTORY LOGGER ---
@@ -54,7 +81,3 @@ log_recent_dir() {
   mv "$FILE.tmp" "$FILE" >/dev/null 2>&1
   tail -n 50 "$FILE" >"$FILE.tmp" && mv "$FILE.tmp" "$FILE" >/dev/null 2>&1
 }
-
-# --- PROMPT COMMAND ---
-# Combine history sync and directory logging safely
-PROMPT_COMMAND="history -a; history -n; log_recent_dir"

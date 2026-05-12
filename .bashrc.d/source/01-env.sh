@@ -25,14 +25,3 @@ set -o vi
 if [[ -z "$BASH_COMPLETION_VERSINFO" ]] && [[ -f /usr/share/bash-completion/bash_completion ]]; then
   source /usr/share/bash-completion/bash_completion
 fi
-
-# --- History ---
-export HISTFILE="$HOME/.bash_history"
-export HISTSIZE=100000
-export HISTFILESIZE=200000
-export HISTCONTROL=ignoredups:erasedups
-export HISTTIMEFORMAT="%F %T "
-
-shopt -s cmdhist
-shopt -s lithist
-shopt -s histappend
