@@ -2,14 +2,13 @@
 
 # --- History ---
 export HISTFILE="$HOME/.bash_history"
-export HISTSIZE=20000
-export HISTFILESIZE=50000
+export HISTSIZE=100000
+export HISTFILESIZE=200000
 export HISTCONTROL=ignoreboth:erasedups
-export HISTIGNORE="&:[ ]*"
 export HISTTIMEFORMAT="%F %T "
 
 shopt -s histappend
 shopt -s cmdhist
 shopt -s lithist
 
-PROMPT_COMMAND='history -a; history -n'
+PROMPT_COMMAND+=("history -a; history -n")

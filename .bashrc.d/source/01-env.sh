@@ -4,19 +4,14 @@
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline --color='header:italic'"
 
 # --- Editor ---
-export EDITOR
-if command -v nvim >/dev/null 2>&1; then
-  EDITOR="$(command -v nvim)"
-elif command -v vim >/dev/null 2>&1; then
-  EDITOR="$(command -v vim)"
-elif command -v nano >/dev/null 2>&1; then
-  EDITOR="$(command -v nano)"
-fi
-
-if [[ -n "$EDITOR" ]]; then
-  export VISUAL="$EDITOR"
-  export SUDO_EDITOR="$EDITOR"
-fi
+for ed in nvim vim nano; do
+  if EDITOR_PATH=$(command -v "$ed" 2>/dev/null); then
+    export EDITOR="$EDITOR_PATH"
+    export VISUAL="$EDITOR_PATH"
+    export SUDO_EDITOR="$EDITOR_PATH"
+    break
+  fi
+done
 
 # Enable Vim keystrokes in bash (Required for ble.sh Vi mode)
 set -o vi

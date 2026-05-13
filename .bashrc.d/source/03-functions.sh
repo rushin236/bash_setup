@@ -85,4 +85,4 @@ log_recent_dir() {
   mv "$file.tmp" "$file"
 }
 
-PROMPT_COMMAND='log_recent_dir'
+PROMPT_COMMAND+=("log_recent_dir")
