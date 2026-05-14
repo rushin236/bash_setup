@@ -23,7 +23,7 @@ tool_pkg() {
 
   if [[ $run_all -eq 1 ]]; then
     log "Starting global '$action' for all tools..."
-    local ordered_pkgs=("nvm" "uv" "rust" "go" "java" "julia" "php" "micromamba" "ruby" "fzf" "starship" "carapace" "blesh" "nvim" "ripgrep" "fd" "shellcheck" "composer")
+    local ordered_pkgs=("mise" "uv" "julia" "fzf" "starship" "carapace" "blesh" "nvim" "ripgrep" "fd")
     for pkg in "${ordered_pkgs[@]}"; do
       _exec_pkg "$pkg" "$action"
     done

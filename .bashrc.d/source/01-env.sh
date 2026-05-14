@@ -20,3 +20,5 @@ set -o vi
 if [[ -z "$BASH_COMPLETION_VERSINFO" ]] && [[ -f /usr/share/bash-completion/bash_completion ]]; then
   source /usr/share/bash-completion/bash_completion
 fi
+
+export MISE_PYTHON_GITHUB_ATTESTATIONS=false

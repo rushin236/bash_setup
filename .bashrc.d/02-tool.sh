@@ -4,36 +4,28 @@ tool() {
 
   case "$cmd" in
     pkg)
-      (
-        source ~/.bashrc.d/tool/pkg.sh
-        tool_pkg "$@"
-      )
+      source "$HOME/.bashrc.d/tool/pkg.sh"
+      tool_pkg "$@"
+      _refresh_shell_runtime
       ;;
-    sub-pkg)
-      (
-        source ~/.bashrc.d/tool/sub-pkg.sh
-        tool_sub_pkg "$@"
-      )
+    subpkg)
+      source "$HOME/.bashrc.d/tool/subpkg.sh"
+      tool_sub_pkg "$@"
+      _refresh_shell_runtime
       ;;
     sync)
-      (
-        source ~/.bashrc.d/tool/sync.sh
-        tool_sync "$@"
-      )
+      source "$HOME/.bashrc.d/tool/sync.sh"
+      tool_sync "$@"
+      _refresh_shell_runtime
       ;;
     sys)
-      (
-        source ~/.bashrc.d/tool/sys.sh
-        tool_sys "$@"
-      )
+      source "$HOME/.bashrc.d/tool/sys.sh"
+      tool_sys "$@"
+      _refresh_shell_runtime
       ;;
     list | "")
-      (
-        source ~/.bashrc.d/tool/list.sh
-        tool_list
-      )
+      source "$HOME/.bashrc.d/tool/list.sh"
+      tool_list
       ;;
   esac
-
-  source "${HOME}/.bashrc"
 }
