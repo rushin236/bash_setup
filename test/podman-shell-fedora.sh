@@ -9,9 +9,10 @@ _shell_fedora_logic() {
     dnf install -y \
     bash git curl wget tar gzip xz unzip zip bzip2 shadow-utils sudo procps-ng make \
     gcc gcc-c++ grep sed gawk findutils coreutils libffi-devel libyaml-devel openssl-devel \
-    zlib-devel readline-devel gmp-devel lua lua-devel luarocks php-cli jq tmux ImageMagick \
+    zlib-devel readline-devel gmp-devel lua lua-devel luarocks jq tmux ImageMagick \
     ghostscript pandoc sqlite bat btop ncdu pkgconf-pkg-config fontconfig-devel freetype-devel \
-    harfbuzz-devel sqlite-devel libicu-devel graphite2-devel libcurl-devel libpng-devel 1>/dev/null
+    harfbuzz-devel sqlite-devel libicu-devel graphite2-devel libcurl-devel libpng-devel \
+    autoconf bison re2c libxml2-devel oniguruma-devel libzip-devel 1>/dev/null
 
     useradd -m -s /bin/bash tester
     echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers

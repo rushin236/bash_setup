@@ -1,5 +1,127 @@
 #!/usr/bin/env bash
 
+_run_pkg() {
+  local name="$1"
+  local act="$2"
+
+  local file="$HOME/.bashrc.d/packages/${name}.sh"
+
+  [[ -f "$file" ]] || {
+    log "Package definition not found: $name"
+    return 1
+  }
+
+  source "$file"
+
+  "pkg_${name//-/_}" "$act"
+}
+
+_ensure_tools() {
+  if ! command -v mise >/dev/null 2>&1; then
+    log "Installing mise..."
+    _run_pkg mise install || return 1
+    _refresh_shell_runtime
+  fi
+
+  if ! command -v uv >/dev/null 2>&1; then
+    log "Installing uv..."
+    _run_pkg uv install || return 1
+    _refresh_shell_runtime
+  fi
+
+  command -v mise >/dev/null 2>&1 || {
+    log "Failed to install mise"
+    return 1
+  }
+
+  command -v uv >/dev/null 2>&1 || {
+    log "Failed to install uv"
+    return 1
+  }
+}
+
+_ensure_mise_settings() {
+  local ruby_compile
+
+  ruby_compile="$(mise settings get ruby.compile 2>/dev/null)"
+
+  if [[ "$ruby_compile" != "false" ]]; then
+    mise settings set ruby.compile false
+  fi
+
+  if ! mise plugin ls 2>/dev/null | grep -qx php; then
+    mise plugin install php https://github.com/verzly/mise-php#latest
+  fi
+}
+
+_sync_runtime() {
+  _ensure_tools || return 1
+  _ensure_mise_settings || return 1
+
+  local runtime="$1"
+  local version=""
+
+  source "$HOME/.bashrc.d/global_source.conf" 2>/dev/null
+
+  case "$runtime" in
+    node)
+      version="${VERSION_NODE:-24}"
+      ;;
+    python)
+      version="${VERSION_PYTHON:-3.12}"
+      ;;
+    java)
+      version="${VERSION_JAVA:-21}"
+      ;;
+    ruby)
+      version="${VERSION_RUBY:-3.3}"
+      ;;
+    php)
+      version="${VERSION_PHP:-8}"
+      ;;
+    go)
+      version="${VERSION_GO:-1.24}"
+      ;;
+    rust)
+      version="${VERSION_RUST:-stable}"
+      ;;
+    *)
+      log "Unknown runtime: $runtime"
+      return 1
+      ;;
+  esac
+
+  log "Syncing $runtime@$version"
+
+  if mise use -g "${runtime}@${version}"; then
+    _refresh_shell_runtime
+    log "Sync done for $runtime@$version"
+  else
+    log "Failed to sync $runtime@$version"
+    return 1
+  fi
+}
+
+_sync_languages() {
+  _sync_runtime python || return 1
+  _sync_runtime rust || return 1
+  _sync_runtime go || return 1
+  _sync_runtime java || return 1
+  _sync_runtime ruby || return 1
+  _sync_runtime node || return 1
+  _sync_runtime php || return 1
+}
+
+_sync_subpkgs() {
+  source "$HOME/.bashrc.d/tool/subpkg.sh"
+
+  tool_sub_pkg npm install all || return 1
+  tool_sub_pkg cargo install all || return 1
+  tool_sub_pkg go install all || return 1
+  tool_sub_pkg rustup install all || return 1
+  tool_sub_pkg mise install all || return 1
+}
+
 tool_sync() {
   local args=("$@")
 
@@ -8,138 +130,26 @@ tool_sync() {
   for item in "${args[@]}"; do
     case "$item" in
       all)
-        _sync_pkg_managers
-        _sync_languages
-        _sync_sub_packages
+        _sync_languages || return 1
+        _sync_subpkgs || return 1
         ;;
-      node | nvm)
-        _sync_node
+
+      runtimes | mise)
+        _sync_languages || return 1
         ;;
-      python | micromamba)
-        _sync_python
+
+      subpkgs)
+        _sync_subpkgs || return 1
         ;;
-      java)
-        _sync_java
+
+      node | python | java | ruby | php | go | rust)
+        _sync_runtime "$item" || return 1
         ;;
-      ruby)
-        _sync_ruby
-        ;;
-      php)
-        _sync_php
-        ;;
-      go)
-        _sync_go
-        ;;
-      rust)
-        _sync_rust
-        ;;
+
       *)
-        echo "Unknown sync target: $item"
+        log "Unknown sync target: $item"
+        return 1
         ;;
     esac
   done
-}
-
-_sync_pkg_managers() {
-  tool pkg install nvm micromamba java ruby php rust go
-}
-
-_sync_languages() {
-  _sync_node
-  _sync_python
-  _sync_java
-  _sync_ruby
-  _sync_php
-}
-
-_sync_sub_packages() {
-  tool sub-pkg npm install all
-  tool sub-pkg rustup install all
-  tool sub-pkg cargo install all
-  tool sub-pkg go install all
-}
-
-_sync_node() {
-  export NVM_DIR="$HOME/.nvm"
-  [[ -s "$NVM_DIR/nvm.sh" ]] || return 0
-
-  [[ -f /etc/alpine-release ]] &&
-    export NVM_NODEJS_ORG_MIRROR="https://unofficial-builds.nodejs.org/download/release"
-
-  source "$NVM_DIR/nvm.sh"
-
-  source "$HOME/.bashrc.d/global_source.conf" 2>/dev/null
-
-  local ver="${VERSION_NVM:-22}"
-
-  log "Syncing Node $ver"
-  nvm install "$ver"
-  nvm alias default "$ver"
-}
-
-_sync_python() {
-  command -v micromamba >/dev/null 2>&1 || return 0
-
-  source "$HOME/.bashrc.d/global_source.conf" 2>/dev/null
-
-  local ver="${VERSION_PYTHON:-3.12}"
-  local root="$HOME/micromamba"
-
-  log "Syncing Python $ver in env user"
-
-  micromamba create -y -n user -c conda-forge "python=$ver" pip -r "$root" >/dev/null 2>&1 ||
-    micromamba install -y -n user -c conda-forge "python=$ver" pip -r "$root"
-}
-
-_sync_java() {
-  export SDKMAN_DIR="$HOME/.sdkman"
-  [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] || return 0
-
-  source "$SDKMAN_DIR/bin/sdkman-init.sh"
-  source "$HOME/.bashrc.d/global_source.conf" 2>/dev/null
-
-  local ver="${VERSION_JAVA:-21}"
-
-  log "Syncing Java $ver"
-  sdk install java "$ver"
-  sdk default java "$ver"
-}
-
-_sync_ruby() {
-  add_path "$HOME/.rbenv/bin"
-
-  command -v rbenv >/dev/null 2>&1 || return 0
-  eval "$(rbenv init - bash)"
-
-  source "$HOME/.bashrc.d/global_source.conf" 2>/dev/null
-
-  local ver="${VERSION_RUBY:-3.3.6}"
-
-  log "Syncing Ruby $ver"
-  rbenv install -s "$ver"
-  rbenv global "$ver"
-}
-
-_sync_php() {
-  [[ -s "$HOME/.phpbrew/bashrc" ]] || return 0
-
-  source "$HOME/.phpbrew/bashrc"
-  source "$HOME/.bashrc.d/global_source.conf" 2>/dev/null
-
-  local ver="${VERSION_PHP:-8.3.4}"
-
-  log "Syncing PHP $ver"
-  phpbrew install "$ver" +default
-  phpbrew switch "$ver"
-}
-
-_sync_go() {
-  tool pkg install go
-  tool sub-pkg go install all
-}
-
-_sync_rust() {
-  tool pkg install rust
-  tool sub-pkg rustup install all
-  tool sub-pkg cargo install all
 }

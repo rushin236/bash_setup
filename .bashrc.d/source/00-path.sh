@@ -7,6 +7,12 @@ add_path() {
   esac
 }
 
+export GOPATH="$HOME/.local/share/go"
+export GOBIN="$GOPATH/bin"
+
 add_path "$HOME/.local/bin"
+add_path "$HOME/.local/share/mise/shims"
+add_path "$GOBIN"
+add_path "$HOME/.cargo/bin"
 
 export PATH

@@ -6,13 +6,16 @@ _shell_opensuse_logic() {
   CNAME="test-shell-opensuse-$arch"
   podman rm -f $CNAME 2>/dev/null || true
   podman run --rm -it --platform "linux/$arch" -v "$PWD:/workspace:Z" --name $CNAME opensuse/tumbleweed bash -c "
+    zypper --non-interactive ref
+
     zypper --non-interactive install \
     bash git curl wget tar gzip xz unzip zip bzip2 shadow sudo procps make gcc gcc-c++ grep sed \
     gawk findutils coreutils libffi-devel libyaml-devel libopenssl-devel zlib-devel \
-    readline-devel gmp-devel lua54 lua54-devel lua54-luarocks php php-cli jq tmux ImageMagick \
+    readline-devel gmp-devel lua54 lua54-devel lua54-luarocks jq tmux ImageMagick \
     ghostscript pandoc sqlite3 bat btop ncdu pkgconf-pkg-config \
     fontconfig-devel freetype2-devel harfbuzz-devel sqlite3-devel \
-    libicu-devel libcurl-devel libpng16-devel libgraphite2-devel 1>/dev/null
+    libicu-devel libcurl-devel libpng16-devel graphite2-devel \
+    autoconf bison re2c libxml2-devel oniguruma-devel libzip-devel 1>/dev/null
 
     useradd -m -s /bin/bash tester
     echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers

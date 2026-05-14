@@ -9,7 +9,7 @@ _shell_alpine_logic() {
     apk add --no-cache \
     bash git curl wget tar gzip xz unzip zip bzip2 shadow sudo build-base linux-headers \
     musl-dev gcompat pkgconf procps grep sed gawk findutils coreutils libffi-dev yaml-dev \
-    openssl-dev zlib-dev readline-dev gmp-dev lua luarocks php php-cli php-curl php-mbstring \
+    openssl-dev zlib-dev readline-dev gmp-dev lua luarocks \
     jq tmux imagemagick ghostscript pandoc sqlite bat btop ncdu 1>/dev/null
 
     useradd -m -s /bin/bash tester

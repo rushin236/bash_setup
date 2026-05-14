@@ -9,12 +9,14 @@ _shell_debian_logic() {
     export DEBIAN_FRONTEND=noninteractive
 
     apt-get update >/dev/null
+
     apt-get install -y bash git curl wget tar gzip xz-utils unzip zip bzip2 passwd sudo \
     procps make gcc g++ grep sed gawk findutils coreutils libffi-dev libyaml-dev libssl-dev \
-    zlib1g-dev libreadline-dev libgmp-dev lua5.4 liblua5.4-dev luarocks php-cli jq tmux \
+    zlib1g-dev libreadline-dev libgmp-dev lua5.4 liblua5.4-dev luarocks jq tmux \
     imagemagick ghostscript pandoc sqlite3 bat btop ncdu pkg-config \
     libfontconfig1-dev libfreetype6-dev libharfbuzz-dev libsqlite3-dev \
-    libicu-dev libcurl4-openssl-dev libpng-dev libgraphite2-dev 1>/dev/null
+    libicu-dev libcurl4-openssl-dev libpng-dev libgraphite2-dev \
+    autoconf bison re2c libxml2-dev libonig-dev libzip-dev 1>/dev/null
 
     # Fix the Debian 'bat' naming conflict so validation passes
     ln -sf /usr/bin/batcat /usr/local/bin/bat

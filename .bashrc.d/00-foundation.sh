@@ -54,3 +54,18 @@ ensure_local_dirs() {
 }
 
 ensure_local_dirs
+
+_refresh_shell_runtime() {
+  hash -r
+
+  if command -v mise >/dev/null 2>&1; then
+    # Use 'env' to inject PATH instantly in non-interactive scripts
+    eval "$(mise env)"
+
+    # Rebuild the shims directory so the OS can find newly installed tools
+    mise reshim >/dev/null 2>&1 || true
+
+    # Clear bash's cache so it recognizes the new binaries
+    hash -r
+  fi
+}
