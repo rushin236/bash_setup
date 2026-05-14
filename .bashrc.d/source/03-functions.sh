@@ -82,7 +82,7 @@ log_recent_dir() {
     tac "$file" 2>/dev/null
   } | awk '!seen[$0]++' | head -n 50 | tac >"$file.tmp"
 
-  mv "$file.tmp" "$file"
+  mv "$file.tmp" "$file" >/dev/null 2>&1
 }
 
 PROMPT_COMMAND+=("log_recent_dir")
