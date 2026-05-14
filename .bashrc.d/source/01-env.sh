@@ -22,3 +22,4 @@ if [[ -z "$BASH_COMPLETION_VERSINFO" ]] && [[ -f /usr/share/bash-completion/bash
 fi
 
 export MISE_PYTHON_GITHUB_ATTESTATIONS=false
+export PHP_BUILD_INSTALL_DEPENDENCIES="no"
