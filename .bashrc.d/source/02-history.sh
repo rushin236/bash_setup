@@ -6,7 +6,13 @@ export HISTSIZE=50000
 export HISTFILESIZE=200000
 export HISTCONTROL=ignoreboth:erasedups
 export HISTTIMEFORMAT="%F %T "
-export HISTIGNORE="pwd:clear:exit:q:history*"
+export HISTIGNORE="\
+ls:ll:la:l:\
+cd:cd ..:cd ~:\
+pwd:clear:\
+exit:q:\
+history*:\
+*ps"
 
 shopt -s histappend
 shopt -s cmdhist
