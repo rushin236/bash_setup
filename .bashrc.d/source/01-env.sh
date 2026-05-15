@@ -23,3 +23,11 @@ fi
 
 export MISE_PYTHON_GITHUB_ATTESTATIONS=false
 export PHP_SKIP_DEPS=1
+export PHP_CONFIGURE_OPTIONS="--enable-bcmath --enable-calendar \
+--enable-dba --enable-exif --enable-fpm --enable-ftp --enable-gd \
+--enable-intl --enable-mbregex --enable-mbstring --enable-mysqlnd \
+--enable-pcntl --enable-shmop --enable-soap --enable-sockets \
+--enable-sysvmsg --enable-sysvsem --enable-sysvshm --with-curl \
+--with-mhash --with-openssl --with-mysqli=mysqlnd \
+--with-pdo-mysql=mysqlnd --with-zlib --without-pcre-jit \
+--with-readline --with-gettext --with-zip"
