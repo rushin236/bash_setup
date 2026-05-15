@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-_run_pkg() {
-  local name="$1"
-  local act="$2"
+_install_pkg() {
+  local act="$1"
+  local name="$2"
 
-  local file="$HOME/.bashrc.d/packages/${name}.sh"
+  local file="$HOME/.bashrc.d/tool/pkg.sh"
 
   [[ -f "$file" ]] || {
     log "Package definition not found: $name"
@@ -13,50 +13,31 @@ _run_pkg() {
 
   source "$file"
 
-  "pkg_${name//-/_}" "$act"
+  tool_pkg "$act" "$name"
 }
 
 _ensure_tools() {
-  if ! command -v mise >/dev/null 2>&1; then
-    log "Installing mise..."
-    _run_pkg mise install || return 1
-    _refresh_shell_runtime
-  fi
+  local pkg
 
-  if ! command -v uv >/dev/null 2>&1; then
-    log "Installing uv..."
-    _run_pkg uv install || return 1
-    _refresh_shell_runtime
-  fi
+  for pkg in mise uv; do
+    # 1. Check if the tool is missing
+    if ! command -v "$pkg" >/dev/null 2>&1; then
+      log "Installing $pkg..."
+      _install_pkg install "$pkg" || return 1
+      _refresh_shell_runtime
+    fi
 
-  command -v mise >/dev/null 2>&1 || {
-    log "Failed to install mise"
-    return 1
-  }
-
-  command -v uv >/dev/null 2>&1 || {
-    log "Failed to install uv"
-    return 1
-  }
-}
-
-_ensure_mise_settings() {
-  local ruby_compile
-
-  ruby_compile="$(mise settings get ruby.compile 2>/dev/null)"
-
-  if [[ "$ruby_compile" != "false" ]]; then
-    mise settings set ruby.compile false
-  fi
-
-  if ! mise plugin ls 2>/dev/null | grep -qx php; then
-    mise plugin install php https://github.com/verzly/mise-php#latest
-  fi
+    # 2. Verify installation succeeded
+    command -v "$pkg" >/dev/null 2>&1 && log "Tool $pkg installed" || {
+      log "Failed to install $pkg"
+      return 1
+    }
+  done
 }
 
 _sync_runtime() {
   _ensure_tools || return 1
-  _ensure_mise_settings || return 1
+  _ensure_mise_config || return 1
 
   local runtime="$1"
   local version=""
