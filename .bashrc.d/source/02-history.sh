@@ -7,7 +7,7 @@ export HISTFILESIZE=200000
 export HISTCONTROL=ignoreboth:erasedups
 export HISTTIMEFORMAT="%F %T "
 export HISTIGNORE="\
-ls:ll:la:l:\
+ls:ll:la:l:ls -al:\
 cd:cd ..:cd ~:\
 pwd:clear:\
 exit:q:\
