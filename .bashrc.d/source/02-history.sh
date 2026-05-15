@@ -11,4 +11,4 @@ shopt -s histappend
 shopt -s cmdhist
 shopt -s lithist
 
-PROMPT_COMMAND+=("history -a; history -n")
+PROMPT_COMMAND+=("history -a" "history -n")

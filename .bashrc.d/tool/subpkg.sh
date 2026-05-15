@@ -1,69 +1,34 @@
 #!/usr/bin/env bash
 
-_sync_runtime_tool() {
-  source "$HOME/.bashrc.d/tool/sync.sh"
-
-  _sync_runtime "$1" || return 1
-
-  _refresh_shell_runtime
-}
-
 _ensure_manager() {
   local manager="$1"
+  local check_cmd="$manager"
 
+  # Both cargo and rustup rely on 'cargo' being executable
+  [[ "$manager" == "rustup" ]] && check_cmd="cargo"
+
+  # 1. Early Exit: If the manager is already installed, do nothing.
+  command -v "$check_cmd" >/dev/null 2>&1 && return 0
+
+  log "'$manager' missing. Resolving required runtime..."
+
+  # 2. Source sync.sh exactly ONCE for this subshell
+  source "$HOME/.bashrc.d/tool/sync.sh"
+
+  # 3. Route to the correct function inside sync.sh
   case "$manager" in
-    npm)
-      command -v npm >/dev/null 2>&1 && return 0
-
-      log "'npm' missing. Installing required runtime..."
-      _sync_runtime_tool node || return 1
-      ;;
-
-    cargo | rustup)
-      command -v cargo >/dev/null 2>&1 && return 0
-
-      log "'cargo/rustup' missing. Installing required runtime..."
-      _sync_runtime_tool rust || return 1
-      ;;
-
-    go)
-      command -v go >/dev/null 2>&1 && return 0
-
-      log "'go' missing. Installing required runtime..."
-      _sync_runtime_tool go || return 1
-      ;;
-
-    mise)
-      command -v mise >/dev/null 2>&1 && return 0
-
-      log "'mise' missing. Installing required runtime tools..."
-      source "$HOME/.bashrc.d/tool/sync.sh"
-
-      _ensure_tools || return 1
-      ;;
-
+    npm) _sync_runtime node || return 1 ;;
+    cargo | rustup) _sync_runtime rust || return 1 ;;
+    go) _sync_runtime go || return 1 ;;
+    mise) _ensure_tools || return 1 ;;
     *)
       log "Unsupported manager: $manager"
       return 1
       ;;
   esac
 
-  _refresh_shell_runtime
-
-  case "$manager" in
-    npm)
-      command -v npm >/dev/null 2>&1
-      ;;
-    cargo | rustup)
-      command -v cargo >/dev/null 2>&1
-      ;;
-    go)
-      command -v go >/dev/null 2>&1
-      ;;
-    mise)
-      command -v mise >/dev/null 2>&1
-      ;;
-  esac || {
+  # 4. Final Verification: Check if the resolution actually worked
+  command -v "$check_cmd" >/dev/null 2>&1 && log "Found $check_cmd" || {
     log "Failed to provision '$manager'"
     return 1
   }
