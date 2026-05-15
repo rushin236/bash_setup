@@ -46,45 +46,26 @@ _async_history_clean() {
     local skip_next_timestamp=false
 
     # Process the file backwards using tac
-    while IFS= read -r line; do
+    while IFS= read -r cmd && IFS= read -r timestamp; do
 
-      # If the line is a timestamp (e.g., #1684000010)
-      if [[ "$line" =~ ^#[0-9]+$ ]]; then
-        if [[ "$skip_next_timestamp" == true ]]; then
-          skip_next_timestamp=false # Reset and drop this timestamp
-        else
-          echo "$line" >>"$tmp_file" # Keep it
-        fi
+      # Skip malformed entries
+      [[ ! "$timestamp" =~ ^#[0-9]+$ ]] && continue
+      [[ -z "$cmd" ]] && continue
 
-      # If the line is a command
-      else
-        local cmd="$line"
-        local should_ignore=false
+      # HISTIGNORE matching
+      for pattern in "${ignore_patterns[@]}"; do
+        [[ "$cmd" == $pattern ]] && continue 2
+      done
 
-        # 1. Exact HISTIGNORE matching
-        for pattern in "${ignore_patterns[@]}"; do
-          # Note: $pattern is intentionally unquoted here so Bash treats it
-          # as a native glob pattern exactly like HISTIGNORE does.
-          if [[ "$cmd" == $pattern ]]; then
-            should_ignore=true
-            break
-          fi
-        done
+      # Duplicate removal
+      [[ -n "${seen[$cmd]}" ]] && continue
 
-        # 2. Duplicate matching
-        if [[ -n "${seen[$cmd]}" ]]; then
-          should_ignore=true
-        fi
+      # Keep command
+      printf '%s\n%s\n' "$cmd" "$timestamp" >>"$tmp_file"
 
-        # 3. Action
-        if [[ "$should_ignore" == true ]]; then
-          skip_next_timestamp=true # Drop this command and flag its timestamp
-        else
-          echo "$cmd" >>"$tmp_file" # Keep this command
-          seen["$cmd"]=1
-          skip_next_timestamp=false
-        fi
-      fi
+      # Mark as seen
+      seen["$cmd"]=1
+
     done < <(tac "$hist_file")
 
     # Reverse it back and safely overwrite the original history file
