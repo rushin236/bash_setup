@@ -42,7 +42,7 @@ detect_arch() {
 }
 
 makedirs() {
-  mkdir -p "$@"
+  mkdir -p "$@" >/dev/null
 }
 
 ensure_local_dirs() {
