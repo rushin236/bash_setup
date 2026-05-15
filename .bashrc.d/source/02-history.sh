@@ -9,10 +9,11 @@ export HISTTIMEFORMAT="%F %T "
 export HISTIGNORE="\
 ls:ll:la:l:ls -al:\
 cd:cd ..:cd ~:\
-pwd:clear:\
+pwd:clear:c:\
 exit:q:\
 history*:\
-*ps"
+bg:fg:jobs:\
+btop:htop:*ps"
 
 shopt -s histappend
 shopt -s cmdhist
@@ -24,28 +25,71 @@ _async_history_clean() {
   local marker="$HOME/.cache/bash_history_cleaner.marker"
   local hist_file="$HOME/.bash_history"
 
-  # 1. Ensure the cache directory exists
   mkdir -p "$HOME/.cache"
 
-  # 2. Check if the marker exists and is YOUNGER than 60 minutes.
-  # If it is, exit instantly to keep startup at 0ms.
+  # Check marker (bails out if younger than 60 mins)
   if [[ -f "$marker" ]] && [[ -z $(find "$marker" -mmin +60 2>/dev/null) ]]; then
     return 0
   fi
-
-  # 3. Touch the marker immediately so other terminal tabs don't trigger it
   touch "$marker"
 
-  # 4. Run the heavy cleaner in an isolated, disowned background process
+  # Background process
   (
-    # Create a temporary file
     local tmp_file="${hist_file}.tmp"
+    >"$tmp_file" # Ensure temp file is empty
 
-    # Run your exact awk cleaner logic
-    tac "$hist_file" | awk 'NR%2==1 {cmd=$0; next} {if (!seen[cmd]++) {print cmd; print $0}}' | tac >"$tmp_file"
+    # Split your dynamic HISTIGNORE variable by colons into an array
+    IFS=':' read -ra ignore_patterns <<<"$HISTIGNORE"
 
-    # Safely overwrite the original
-    mv "$tmp_file" "$hist_file"
+    # Associative array to track duplicates
+    local -A seen
+    local skip_next_timestamp=false
+
+    # Process the file backwards using tac
+    while IFS= read -r line; do
+
+      # If the line is a timestamp (e.g., #1684000010)
+      if [[ "$line" =~ ^#[0-9]+$ ]]; then
+        if [[ "$skip_next_timestamp" == true ]]; then
+          skip_next_timestamp=false # Reset and drop this timestamp
+        else
+          echo "$line" >>"$tmp_file" # Keep it
+        fi
+
+      # If the line is a command
+      else
+        local cmd="$line"
+        local should_ignore=false
+
+        # 1. Exact HISTIGNORE matching
+        for pattern in "${ignore_patterns[@]}"; do
+          # Note: $pattern is intentionally unquoted here so Bash treats it
+          # as a native glob pattern exactly like HISTIGNORE does.
+          if [[ "$cmd" == $pattern ]]; then
+            should_ignore=true
+            break
+          fi
+        done
+
+        # 2. Duplicate matching
+        if [[ -n "${seen[$cmd]}" ]]; then
+          should_ignore=true
+        fi
+
+        # 3. Action
+        if [[ "$should_ignore" == true ]]; then
+          skip_next_timestamp=true # Drop this command and flag its timestamp
+        else
+          echo "$cmd" >>"$tmp_file" # Keep this command
+          seen["$cmd"]=1
+          skip_next_timestamp=false
+        fi
+      fi
+    done < <(tac "$hist_file")
+
+    # Reverse it back and safely overwrite the original history file
+    tac "$tmp_file" >"$hist_file"
+    rm -f "$tmp_file"
   ) >/dev/null 2>&1 &
   disown
 }
