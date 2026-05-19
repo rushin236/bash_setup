@@ -18,12 +18,6 @@ test() {
         shell "$@"
       )
       ;;
-    blank)
-      (
-        source ./test/03-blank-shell.sh
-        blank_shell "$@"
-      )
-      ;;
     *)
       echo "Invalid command: $cmd"
       echo "Usage: test run {distro arch|all} or Usage: test shell {distro cpu-arch}"

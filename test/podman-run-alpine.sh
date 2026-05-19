@@ -1,134 +1,72 @@
-run_alpine_amd64() { _run_alpine_logic "amd64"; }
-run_alpine_arm64() { _run_alpine_logic "arm64"; }
+run_alpine_amd64() { _run_alpine_container "amd64"; }
+run_alpine_arm64() { _run_alpine_container "arm64"; }
 
-_run_alpine_logic() {
-  local arch=$1
-  CNAME="test-run-alpine-$arch"
-  podman rm -f $CNAME 2>/dev/null || true
-  podman run --rm -i --platform "linux/$arch" -v "$PWD:/workspace:Z" --name $CNAME alpine:latest sh <<'EOF'
-set -e
+_run_alpine_container() {
+  local target_arch="${1:-amd64}"
+  echo "Starting Alpine Linux container (${target_arch})..."
 
-apk add --no-cache \
-bash git curl wget tar gzip xz unzip zip bzip2 shadow sudo build-base linux-headers \
-musl-dev gcompat pkgconf procps grep sed gawk findutils coreutils libffi-dev yaml-dev \
-openssl-dev zlib-dev readline-dev gmp-dev lua luarocks \
-jq tmux imagemagick ghostscript pandoc sqlite bat btop ncdu 1>/dev/null
+  podman run --rm -i \
+    --arch "$target_arch" \
+    --network=host \
+    -v "$PWD":/host_cwd:z \
+    docker.io/library/alpine:latest \
+    /bin/sh -c '
+    # Update package database and install dependencies
+    apk update && apk add --no-cache bash build-base git make curl wget tar xz \
+        coreutils shadow openssl-dev zlib-dev bzip2-dev readline-dev \
+        sqlite-dev libffi-dev pkgconf re2c bison autoconf linux-headers \
+        libxml2-dev oniguruma-dev curl-dev libzip-dev gettext-dev icu-dev \
+        libpng-dev libjpeg-turbo-dev freetype-dev \
+        gcompat libc6-compat
 
-useradd -m -s /bin/bash tester
-echo "tester ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-cp -r /workspace /home/tester/project && chown -R tester:tester /home/tester
+    # Create tester user
+    useradd -m -s /bin/bash tester
 
-su - tester -c 'exec bash -il' <<'INNER_EOF'
-echo "--- COPYING FILES ---"
-mkdir -p ~/.config
-cp ~/project/.bashrc ~/.bashrc
-cp ~/project/.bash_profile ~/.bash_profile
-cp ~/project/.blerc ~/.blerc
-cp -r ~/project/.bashrc.d ~/.bashrc.d
-cp ~/project/.config/starship.toml ~/.config
-. ~/.bashrc
+    # Copy CWD contents to test user home and fix permissions
+    cp -a /host_cwd/. /home/tester/
+    chown -R tester:tester /home/tester
 
-echo "--- INSTALLATION ---"
-tool pkg install all
-tool sync all
+    echo -e "\nEnvironment ready. Handing over to user: tester"
+    cd /home/tester
 
-validate() {
-  local cmd="$1"
-  shift
+    # Execute everything else dynamically as the tester user
+    # Using a heredoc (EOF) entirely avoids the SC2026 single-quote nesting issue
+    su - tester << "EOF"
+        source ~/.bash_profile
 
-  if command -v "$cmd" >/dev/null 2>&1; then
-    local ver
+        echo "=== Running Installation Tools ==="
+        tool pkg install all
+        MISE_VERBOSE=1 PHP_VERBOSE=1 tool sync all
 
-    ver="$("$cmd" "$@" 2>/dev/null | head -n 1)"
+        echo -e "\n=== Verifying Installed Programs ===\n"
 
-    printf "PASS %-18s %s\n" "$cmd" "${ver:-unknown}"
-  else
-    printf "FAIL %-18s\n" "$cmd"
-  fi
-}
+        # A clean, space-separated list of your tools
+        tools="fzf nvim starship carapace uv python pip node npm rustc cargo \
+               rustfmt clippy-driver go shellcheck shfmt ruby gem markdown-toc \
+               php composer java javac julia lua luarocks jq yq tmux magick \
+               gs lazygit delta pandoc sqlite3 bat eza zoxide btop ncdu tectonic"
 
-echo "--- VALIDATION ---"
+        for bin in $tools; do
+            # Dynamically determine the correct version flag
+            case "$bin" in
+                go)   flag="version" ;;
+                lua)  flag="-v" ;;
+                tmux) flag="-V" ;;
+                *)    flag="--version" ;;
+            esac
 
-VALIDATIONS=(
-  "fzf --version"
-  "nvim --version"
-  "starship --version"
-  "carapace --version"
-  "uv --version"
+            echo -n "[CHECK] $bin $flag -> "
+            
+            # Check if the command exists before executing to prevent ugly not found shell errors
+            if command -v "$bin" >/dev/null 2>&1; then
+                "$bin" $flag 2>&1 | head -n 1
+            else
+                echo "❌ FAILED / NOT INSTALLED"
+            fi
+            echo "----------------------------------------"
+        done
 
-  "python --version"
-  "pip --version"
-
-  "node --version"
-  "npm --version"
-
-  "rustc --version"
-  "cargo --version"
-  "rustfmt --version"
-  "clippy-driver --version"
-
-  "go version"
-
-  "shellcheck --version"
-  "shfmt --version"
-
-  "ruby --version"
-  "gem --version"
-
-  "markdown-toc --version"
-
-  "php --version"
-  "composer --version"
-
-  "java --version"
-  "javac --version"
-
-  "julia --version"
-  "lua -v"
-  "luarocks --version"
-
-  "jq --version"
-  "yq --version"
-
-  "tmux -V"
-
-  "magick --version"
-  "gs --version"
-
-  "lazygit --version"
-  "delta --version"
-
-  "pandoc --version"
-  "sqlite3 --version"
-
-  "bat --version"
-  "eza --version"
-  "zoxide --version"
-
-  "btop --version"
-  "ncdu --version"
-
-  "tectonic --version"
-)
-
-for item in "${VALIDATIONS[@]}"; do
-  cmd="${item%% *}"
-  args="${item#"$cmd"}"
-
-  if [[ "$cmd" == "$args" ]]; then
-    validate "$cmd"
-  else
-    validate "$cmd" $args
-  fi
-done
-
-echo "--- TIMING ---"
-bash -lc exit
-for i in {1..3}; do 
-  echo "Run #$i:"
-  time bash -ic exit
-  echo
-done
-INNER_EOF
+        echo -e "\n=== Tests Complete. Exiting Container. ==="
 EOF
+    '
 }

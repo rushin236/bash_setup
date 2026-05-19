@@ -1,89 +1,71 @@
-run_fedora_amd64() { _run_fedora_logic "amd64"; }
-run_fedora_arm64() { _run_fedora_logic "arm64"; }
+run_fedora_amd64() { _run_fedora_container "amd64"; }
+run_fedora_arm64() { _run_fedora_container "arm64"; }
 
-_run_fedora_logic() {
-  local arch=$1
-  CNAME="test-run-fedora-$arch"
-  podman rm -f $CNAME 2>/dev/null || true
-  podman run --rm -i \
-    --platform "linux/$arch" \
-    -v "$PWD:/workspace:Z" \
-    --name $CNAME fedora:latest bash -s <<'EOF'
-set -exo pipefail
+_run_fedora_container() {
+  local target_arch="${1:-amd64}"
+  echo "Starting Fedora Linux container (${target_arch})..."
 
-dnf install -y \
-bash git curl wget tar gzip xz unzip zip bzip2 shadow-utils sudo procps-ng make \
-gcc gcc-c++ grep sed gawk findutils coreutils libffi-devel libyaml-devel openssl-devel \
-zlib-devel readline-devel gmp-devel lua lua-devel luarocks jq tmux ImageMagick \
-ghostscript pandoc sqlite bat btop ncdu pkgconf-pkg-config fontconfig-devel freetype-devel \
-harfbuzz-devel sqlite-devel libicu-devel graphite2-devel libcurl-devel libpng-devel \
-autoconf bison re2c libxml2-devel oniguruma-devel libzip-devel 1>/dev/null
+  podman run --rm -it \
+    --arch "$target_arch" \
+    --network=host \
+    -v "$PWD":/host_cwd:z \
+    docker.io/library/fedora:latest \
+    /bin/bash -c '
+    # Update package database and install dependencies
+    dnf install -y @development-tools util-linux git make curl wget tar xz \
+      openssl-devel zlib-devel bzip2-devel readline-devel sqlite-devel libffi-devel \
+      pkgconfig re2c bison autoconf libxml2-devel oniguruma-devel libcurl-devel \
+      libzip-devel gettext-devel libicu-devel libpng-devel libjpeg-turbo-devel \
+      freetype-devel gdbm-devel libwebp-devel libXpm-devel gcc-c++ automake libtool
 
-useradd -m -s /bin/bash tester
-echo "tester ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-cp -r /workspace /home/tester/project && chown -R tester:tester /home/tester
+    # Create tester user
+    useradd -m -s /bin/bash tester
 
-su - tester -c 'bash -l -s' <<'INNER_EOF'
-echo "--- COPYING FILES ---"
-mkdir -p ~/.config
-cp ~/project/.bashrc ~/.bashrc
-cp ~/project/.bash_profile ~/.bash_profile
-cp ~/project/.blerc ~/.blerc
-cp -r ~/project/.bashrc.d ~/.bashrc.d
-cp ~/project/.config/starship.toml ~/.config
-. ~/.bashrc
+    # Copy CWD contents to test user home and fix permissions
+    cp -a /host_cwd/. /home/tester/
+    chown -R tester:tester /home/tester
 
-echo "--- INSTALLATION ---"
-tool pkg install all
-tool sync all
+    echo -e "\nEnvironment ready. Handing over to user: tester"
+    cd /home/tester
 
-validate() {
-  local cmd="$1"
-  shift
+    # Execute everything else dynamically as the tester user
+    # Using a heredoc (EOF) entirely avoids the SC2026 single-quote nesting issue
+    su - tester << "EOF"
+        source ~/.bash_profile
 
-  if command -v "$cmd" >/dev/null 2>&1; then
-    local ver
+        echo "=== Running Installation Tools ==="
+        tool pkg install all
+        MISE_VERBOSE=1 PHP_VERBOSE=1 tool sync all
 
-    ver="$("$cmd" "$@" 2>/dev/null | head -n 1)"
+        echo -e "\n=== Verifying Installed Programs ===\n"
 
-    printf "PASS %-18s %s\n" "$cmd" "${ver:-unknown}"
-  else
-    printf "FAIL %-18s\n" "$cmd"
-  fi
-}
+        # A clean, space-separated list of your tools
+        tools="fzf nvim starship carapace uv python pip node npm rustc cargo \
+               rustfmt clippy-driver go shellcheck shfmt ruby gem markdown-toc \
+               php composer java javac julia lua luarocks jq yq tmux magick \
+               gs lazygit delta pandoc sqlite3 bat eza zoxide btop ncdu tectonic"
 
-echo "--- VALIDATION ---"
-VALIDATIONS=(
-  "fzf --version" "nvim --version" "starship --version" "carapace --version"
-  "uv --version" "python --version" "pip --version" "node --version"
-  "npm --version" "rustc --version" "cargo --version" "rustfmt --version"
-  "clippy-driver --version" "go version" "shellcheck --version" "shfmt --version"
-  "ruby --version" "gem --version" "markdown-toc --version" "php --version"
-  "composer --version" "java --version" "javac --version" "julia --version"
-  "lua -v" "luarocks --version" "jq --version" "yq --version" "tmux -V"
-  "magick --version" "gs --version" "lazygit --version" "delta --version"
-  "pandoc --version" "sqlite3 --version" "bat --version" "eza --version"
-  "zoxide --version" "btop --version" "ncdu --version" "tectonic --version"
-)
+        for bin in $tools; do
+            # Dynamically determine the correct version flag
+            case "$bin" in
+                go)   flag="version" ;;
+                lua)  flag="-v" ;;
+                tmux) flag="-V" ;;
+                *)    flag="--version" ;;
+            esac
 
-for item in "${VALIDATIONS[@]}"; do
-  cmd="${item%% *}"
-  args="${item#"$cmd"}"
+            echo -n "[CHECK] $bin $flag -> "
+            
+            # Check if the command exists before executing to prevent ugly not found shell errors
+            if command -v "$bin" >/dev/null 2>&1; then
+                "$bin" $flag 2>&1 | head -n 1
+            else
+                echo "❌ FAILED / NOT INSTALLED"
+            fi
+            echo "----------------------------------------"
+        done
 
-  if [[ "$cmd" == "$args" ]]; then
-    validate "$cmd"
-  else
-    validate "$cmd" $args
-  fi
-done
-
-echo "--- TIMING ---"
-bash -lc exit
-for i in {1..3}; do 
-  echo "Run #$i:"
-  time bash -ic exit
-  echo
-done
-INNER_EOF
+        echo -e "\n=== Tests Complete. Exiting Container. ==="
 EOF
+    '
 }

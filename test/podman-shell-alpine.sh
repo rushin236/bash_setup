@@ -1,24 +1,34 @@
-shell_alpine_amd64() { _shell_alpine_logic "amd64"; }
-shell_alpine_arm64() { _shell_alpine_logic "arm64"; }
+shell_alpine_amd64() { _shell_alpine_container "amd64"; }
+shell_alpine_arm64() { _shell_alpine_container "arm64"; }
 
-_shell_alpine_logic() {
-  local arch=$1
-  CNAME="test-shell-alpine-$arch"
-  podman rm -f $CNAME 2>/dev/null || true
-  podman run --rm -it --platform "linux/$arch" -v "$PWD:/workspace:Z" --name $CNAME alpine:latest sh -c "
-    apk add --no-cache \
-    bash git curl wget tar gzip xz unzip zip bzip2 shadow sudo build-base linux-headers \
-    musl-dev gcompat pkgconf procps grep sed gawk findutils coreutils libffi-dev yaml-dev \
-    openssl-dev zlib-dev readline-dev gmp-dev lua luarocks \
-    jq tmux imagemagick ghostscript pandoc sqlite bat btop ncdu 1>/dev/null
+_shell_alpine_container() {
+  local target_arch="${1:-amd64}"
+  echo "Starting Alpine Linux container (${target_arch})..."
 
+  podman run --rm -it \
+    --arch "$target_arch" \
+    --network=host \
+    docker.io/library/alpine:latest \
+    /bin/bash -c '
+    # Update package database and install dependencies
+    apk update && apk add --no-cache bash build-base git make curl wget tar xz \
+        coreutils shadow openssl-dev zlib-dev bzip2-dev readline-dev \
+        sqlite-dev libffi-dev pkgconf re2c bison autoconf linux-headers \
+        libxml2-dev oniguruma-dev curl-dev libzip-dev gettext-dev icu-dev \
+        libpng-dev libjpeg-turbo-dev freetype-dev \
+        gcompat libc6-compat
+
+    # Create tester user
     useradd -m -s /bin/bash tester
-    echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-    cp -r /workspace /home/tester/project 
-    cp /home/tester/project/.bashrc /home/tester/.bashrc
-    cp /home/tester/project/.bash_profile /home/tester/.bash_profile
-    cp /home/tester/project/.blerc /home/tester/.blerc
-    cp -r /home/tester/project/.bashrc.d /home/tester/.bashrc.d
+
+    # Copy CWD contents to test user home and fix permissions
+    cp -a /host_cwd/. /home/tester/
     chown -R tester:tester /home/tester
-    exec su - tester"
+
+    echo -e "\nEnvironment ready. Handing over to user: tester"
+
+    # Switch to test user and launch interactive shell
+    cd /home/tester
+    exec su - tester
+    '
 }

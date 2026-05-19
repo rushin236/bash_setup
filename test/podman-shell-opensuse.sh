@@ -1,29 +1,39 @@
-shell_opensuse_amd64() { _shell_opensuse_logic "amd64"; }
-shell_opensuse_arm64() { _shell_opensuse_logic "arm64"; }
+shell_opensuse_amd64() { _shell_opensuse_container "amd64"; }
+shell_opensuse_arm64() { _shell_opensuse_container "arm64"; }
 
-_shell_opensuse_logic() {
-  local arch=$1
-  CNAME="test-shell-opensuse-$arch"
-  podman rm -f $CNAME 2>/dev/null || true
-  podman run --rm -it --platform "linux/$arch" -v "$PWD:/workspace:Z" --name $CNAME opensuse/tumbleweed bash -c "
-    zypper --non-interactive ref
+_shell_opensuse_container() {
+  local target_arch="${1:-amd64}"
+  echo "Starting Alpine Linux container (${target_arch})..."
 
-    zypper --non-interactive install \
-    bash git curl wget tar gzip xz unzip zip bzip2 shadow sudo procps make gcc gcc-c++ grep sed \
-    gawk findutils coreutils libffi-devel libyaml-devel libopenssl-devel zlib-devel \
-    readline-devel gmp-devel lua54 lua54-devel lua54-luarocks jq tmux ImageMagick \
-    ghostscript pandoc sqlite3 bat btop ncdu pkgconf-pkg-config \
-    fontconfig-devel freetype2-devel harfbuzz-devel sqlite3-devel \
-    libicu-devel libcurl-devel libpng16-devel graphite2-devel \
-    autoconf bison re2c libxml2-devel oniguruma-devel libzip-devel 1>/dev/null
+  podman run --rm -it \
+    --arch "$target_arch" \
+    --network=host \
+    -v "$PWD":/host_cwd:z \
+    docker.io/library/opensuse/leap:latest \
+    /bin/bash -c '
+    # Update package database and install dependencies
+    zypper --non-interactive refresh
 
+    # 2. Install ONLY the exact required tools (no patterns, no dist-upgrade, no recommended bloat)
+    zypper --non-interactive install --no-recommends --force-resolution \
+      gcc gcc-c++ make autoconf automake libtool bison re2c pkgconf patch gawk \
+      findutils git curl tar xz gzip bzip2 zlib-devel libopenssl-devel sqlite3 \
+      sqlite3-devel readline-devel libxml2-devel libcurl-devel libzip-devel \
+      oniguruma-devel libtirpc-devel glibc-devel linux-glibc-devel \
+      ncurses-devel libicu-devel libpng-devel libjpeg-devel \
+      libwebp-devel libsodium-devel gmp-devel ca-certificates
+
+    # Create tester user
     useradd -m -s /bin/bash tester
-    echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-    cp -r /workspace /home/tester/project 
-    cp /home/tester/project/.bashrc /home/tester/.bashrc
-    cp /home/tester/project/.bash_profile /home/tester/.bash_profile
-    cp /home/tester/project/.blerc /home/tester/.blerc
-    cp -r /home/tester/project/.bashrc.d /home/tester/.bashrc.d
+
+    # Copy CWD contents to test user home and fix permissions
+    cp -a /host_cwd/. /home/tester/
     chown -R tester:tester /home/tester
-    exec su - tester"
+
+    echo -e "\nEnvironment ready. Handing over to user: tester"
+
+    # Switch to test user and launch interactive shell
+    cd /home/tester
+    exec su - tester
+    '
 }
