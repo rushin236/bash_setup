@@ -91,15 +91,15 @@ ble-bind -m vi_nmap -f 'SP p' paste-from-system-clipboard
 ble-bind -m vi_xmap -s 'SP p' 'd p'
 
 # --- 2. The ble.sh Screen Wrapper ---
-ble/widget/my_conda_toggle() {
-    ble/term/leave-for-widget
-    conda_toggle_env
-    ble/term/enter-for-widget
-    ble/prompt/clear
-    ble/prompt/update
-    ble/textarea#redraw
-}
+# ble/widget/my_conda_toggle() {
+#     ble/term/leave-for-widget
+#     conda_toggle_env
+#     ble/term/enter-for-widget
+#     ble/prompt/clear
+#     ble/prompt/update
+#     ble/textarea#redraw
+# }
 
 # Conda toggle
-ble-bind -m vi_imap -f 'M-t' my_conda_toggle
-ble-bind -m vi_nmap -f 'M-t' my_conda_toggle
+# ble-bind -m vi_imap -f 'M-t' my_conda_toggle
+# ble-bind -m vi_nmap -f 'M-t' my_conda_toggle
