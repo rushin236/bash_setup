@@ -1,237 +1,122 @@
+## bash_setup (Development & Testing Playground)
 
-# bash_setup
+This repository serves as the official development sandbox, orchestration hub, and cross-distribution test harness for the core [`.bash_setup`](https://www.google.com/search?q=%5Bhttps://github.com/rushin236/.bash_setup%5D(https://github.com/rushin236/.bash_setup)) project.
 
-A portable Bash environment bootstrap for Linux systems.
-
-`bash_setup` provides a consistent shell setup across supported distributions with:
-
-- Structured Bash config (`~/.bashrc.d`)
-- Package/runtime bootstrap commands
-- Language toolchain setup
-- Neovim-friendly developer tools
-- Cross-distro package support
-- Reproducible user environment
+The actual environment configuration framework lives inside the `.bash_setup` submodule. This repository provides a multi-architecture Podman environment to build, debug, and validate changes instantly across multiple Linux distributions.
 
 ---
+## Architecture Setup & Cloning
 
-# Current Status
-
-**Release:** `v0.1.0`
-
-Supported distributions:
-
-- Arch Linux
-- Debian
-- Ubuntu
-- Fedora
-- openSUSE
-
-Not currently supported:
-
-- Alpine Linux  
-  (Micromamba compatibility issues)
-
----
-
-# Features
-
-- Modular Bash config layout
-- `tool pkg install all`
-- `tool sync all`
-- Python / Node / Go / Rust / Java setup
-- CLI tools bootstrap
-- Fast shell startup design
-- Good Neovim ecosystem support
-
----
-
-# Installation
-
-## 1. Clone Repository
+The core project is tracked as a submodule pinned to target the `main` branch. To clone this development harness along with the absolute freshest commits from the `.bash_setup` upstream, run:
 
 ```bash
-cd ~
-git clone https://github.com/rushin236/bash_setup.git
+git clone --recurse-submodules --remote-submodules git@github.com:rushin236/bash_setup.git
+cd bash_setup
+```
+
+### Pulling Latest Submodule Changes Mid-Development
+
+If updates are pushed to the `.bash_setup` project separately, pull them into this harness using:
+
+```bash
+git submodule update --remote --merge
 ```
 
 ---
+## Supported Testing Matrix
 
-## 2. Install Base Dependencies
+The validation test suite offers complete multi-architecture capability, testing both **`amd64`** and **`arm64`** environments across the following distributions:
 
-Choose your distro.
-
----
-
-# Arch Linux
-
-```bash
-sudo pacman -Sy --noconfirm --needed \
-bash git curl wget tar gzip xz unzip zip bzip2 which \
-shadow sudo procps-ng make gcc grep sed gawk findutils coreutils base-devel libffi \
-libyaml openssl zlib readline gmp lua luarocks php pkgconf fontconfig \
-freetype2 harfbuzz jq tmux imagemagick ghostscript pandoc sqlite bat btop ncdu
-```
+* Arch Linux
+* Alpine Linux
+* Debian (Stable)
+* Ubuntu (Latest)
+* Fedora (Latest)
+* openSUSE (Tumbleweed)
 
 ---
+## Interactive Test Framework
 
-# Debian / Ubuntu
+Test configurations are orchestrated using the execution wrapper script `./test-run.sh`. To make the harness functions available in your active shell, source the core test entrypoint:
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y \
-bash git curl wget tar gzip xz-utils unzip zip bzip2 passwd sudo \
-procps make gcc g++ grep sed gawk findutils coreutils libffi-dev libyaml-dev \
-libssl-dev zlib1g-dev libreadline-dev libgmp-dev lua5.4 liblua5.4-dev luarocks \
-php-cli jq tmux imagemagick ghostscript pandoc sqlite3 bat btop ncdu pkg-config \
-libfontconfig1-dev libfreetype6-dev libharfbuzz-dev libsqlite3-dev \
-libicu-dev libcurl4-openssl-dev libpng-dev libgraphite2-dev
+source ./test-run.sh
 ```
 
----
+Once sourced, the `test` command becomes active with three key diagnostic operations: `run`, `shell`, and `blank`.
 
-# Fedora
+### 1. Automated Installation & Validation Suite (`test run`)
 
+This command mounts your local directory workspace into a Podman container, installs base distribution dependencies, sets up configuration symlinks, triggers `tool pkg install all && tool sync all`, and executes an integrated version-validation suite across your runtimes.
+
+* **Syntax:** `test run <distro> <architecture>`
+* **Examples:**
 ```bash
-sudo dnf install -y \
-bash git curl wget tar gzip xz unzip zip bzip2 shadow-utils sudo procps-ng make \
-gcc gcc-c++ grep sed gawk findutils coreutils libffi-devel libyaml-devel \
-openssl-devel zlib-devel readline-devel gmp-devel lua lua-devel luarocks php-cli \
-jq tmux ImageMagick ghostscript pandoc sqlite bat btop ncdu pkgconf-pkg-config \
-fontconfig-devel freetype-devel harfbuzz-devel sqlite-devel \
-libicu-devel graphite2-devel libcurl-devel libpng-devel
+# Run automation against Arch Linux on amd64
+test run arch amd64
+
+# Run automation against Ubuntu on arm64
+test run ubuntu arm64
+
+# Run validation across BOTH amd64 and arm64 targets for Fedora
+test run fedora all
+
 ```
 
----
+### 2. Interactive Development Shell (`test shell`)
 
-# openSUSE
+Drops you directly inside an interactive Bash session as a passwordless `tester` user inside the target container environment, pre-loading your current development files. Perfect for manual testing, debugging edge cases, or fine-tuning setup scripts.
 
+* **Syntax:** `test shell <distro> <architecture>`
+* **Examples:**
 ```bash
-sudo zypper --non-interactive refresh
+# Debug interactive Alpine environment on amd64
+test shell alpine amd64
 
-sudo zypper --non-interactive install \
-bash git curl wget tar gzip xz unzip zip bzip2 shadow sudo procps make gcc gcc-c++ \
-grep sed gawk findutils coreutils libffi-devel libyaml-devel libopenssl-devel \
-zlib-devel readline-devel gmp-devel lua54 lua54-devel lua54-luarocks php php-cli \
-jq tmux ImageMagick ghostscript pandoc sqlite3 bat btop ncdu pkgconf-pkg-config \
-fontconfig-devel freetype2-devel harfbuzz-devel sqlite3-devel \
-libicu-devel libcurl-devel libpng16-devel graphite2-devel
+# Debug interactive Debian environment on arm64
+test shell debian arm64
 ```
 
----
+### 3. Clean-Slate Environment Check (`test blank`)
 
-# 3. Copy Configuration Files
+Launches a bare interactive environment utilizing native distribution container settings. Installs minimal dependencies (`git`, `make`, `curl`, `wget`, `tar`, `xz`) and leaves configuring or executing script runtimes entirely up to your manual interaction.
 
+* **Syntax:** `test blank <distro> <architecture>`
+* **Examples:**
 ```bash
-cp ~/bash_setup/.bashrc ~/.bashrc
-cp ~/bash_setup/.bash_profile ~/.bash_profile
-cp ~/bash_setup/.blerc ~/.blerc
-cp -r ~/bash_setup/.bashrc.d ~/.bashrc.d
-cp ~/project/.config/starship.toml ~/.config
-```
-
-or Install gnu stow and run following
-
-```bash
-stow bash_setup
+# Launch a pristine Fedora container environment
+test blank fedora amd64
 ```
 
 ---
-
-# 4. Reload Shell
-
-```bash
-source ~/.bashrc
-```
-
----
-
-# 5. Install Packages / Toolchains
-
-```bash
-tool pkg install all
-tool sync all
-```
-
----
-
-# Main Commands
-
-## Install all managed packages
-
-```bash
-tool pkg install all
-```
-
-## Update packages
-
-```bash
-tool pkg update all
-```
-
-## Remove packages
-
-```bash
-tool pkg remove all
-```
-
-## Sync runtime tools
-
-```bash
-tool sync all
-```
-
----
-
-# Directory Layout
+## Directory & Submodule Layout
 
 ```text
-~/.bashrc
-~/.bash_profile
-~/.blerc
-~/.bashrc.d/
+.
+├── .bash_setup/             # <-- Core framework submodule (The active dev code)
+├── .bash_profile            # Development shell entrypoints
+├── .bashrc                  # Development dotfile configurations
+├── .blerc                   # Development ble.sh rc file
+├── test-run.sh              # Harness framework wrapper script
+└── test/                    # Distribution Podman orchestration drivers
+    ├── 00-test.sh           # Main router logic
+    ├── 01-run.sh            # Validation framework configuration
+    ├── 02-shell.sh          # Interactive container router
+    ├── 03-blank-shell.sh    # Clean slate shell router
+    └── podman-*.sh          # Distro-specific automation scripts
+
 ```
 
 ---
+## Development Cycle Best Practices
 
-# Notes
-
-* User-local installs preferred where possible
-* Designed for developer machines
-* Works well with Neovim setups
-* Uses modular source files
-
----
-
-# Updating
-
+1. **Modify Submodule:** Make structural changes, fix package hooks, or alter bootstrap paths inside the nested `.bash_setup/` directory.
+2. **Local Integration Test:** Ensure changes parse seamlessly without syntax errors using local test runners:
 ```bash
-cd ~/bash_setup
-git pull
-cp -r .bashrc.d ~/.bashrc.d
-cp .bashrc ~/.bashrc
-cp .bash_profile ~/.bash_profile
-source ~/.bashrc
-tool pkg update all
-tool sync all
+test run arch amd64
 ```
-
----
-
-# Roadmap
-
-* Alpine Linux support
-* Better release automation
-* Expanded distro testing
-* More package backends
-
----
-
-# License
-
-MIT
-
----
-
-# Author
-
-Rushikesh Shinde
+3. **Interactive Fixes:** If a distribution tool fails validation, step directly inside to repair pathing hooks interactively:
+```bash
+test shell debian amd64
+```
+4. **Commit Upstream:** Remember to commit and push changes directly from within your `.bash_setup` submodule directory up to its dedicated repository when development is complete!

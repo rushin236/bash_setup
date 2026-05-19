@@ -1,26 +1,34 @@
-shell_fedora_amd64() { _shell_fedora_logic "amd64"; }
-shell_fedora_arm64() { _shell_fedora_logic "arm64"; }
+shell_fedora_amd64() { _shell_fedora_container "amd64"; }
+shell_fedora_arm64() { _shell_fedora_container "arm64"; }
 
-_shell_fedora_logic() {
-  local arch=$1
-  CNAME="test-shell-fedora-$arch"
-  podman rm -f $CNAME 2>/dev/null || true
-  podman run --rm -it --platform "linux/$arch" -v "$PWD:/workspace:Z" --name $CNAME fedora:latest bash -c "
-    dnf install -y \
-    bash git curl wget tar gzip xz unzip zip bzip2 shadow-utils sudo procps-ng make \
-    gcc gcc-c++ grep sed gawk findutils coreutils libffi-devel libyaml-devel openssl-devel \
-    zlib-devel readline-devel gmp-devel lua lua-devel luarocks jq tmux ImageMagick \
-    ghostscript pandoc sqlite bat btop ncdu pkgconf-pkg-config fontconfig-devel freetype-devel \
-    harfbuzz-devel sqlite-devel libicu-devel graphite2-devel libcurl-devel libpng-devel \
-    autoconf bison re2c libxml2-devel oniguruma-devel libzip-devel 1>/dev/null
+_shell_fedora_container() {
+  local target_arch="${1:-amd64}"
+  echo "Starting Fedora Linux container (${target_arch})..."
 
+  podman run --rm -it \
+    --arch "$target_arch" \
+    --network=host \
+    -v "$PWD":/host_cwd:z \
+    docker.io/library/fedora:latest \
+    /bin/bash -c '
+    # Update package database and install dependencies
+    dnf install -y @development-tools util-linux git make curl wget tar xz \
+      openssl-devel zlib-devel bzip2-devel readline-devel sqlite-devel libffi-devel \
+      pkgconfig re2c bison autoconf libxml2-devel oniguruma-devel libcurl-devel \
+      libzip-devel gettext-devel libicu-devel libpng-devel libjpeg-turbo-devel \
+      freetype-devel gdbm-devel libwebp-devel libXpm-devel gcc-c++ automake libtool
+
+    # Create tester user
     useradd -m -s /bin/bash tester
-    echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-    cp -r /workspace /home/tester/project 
-    cp /home/tester/project/.bashrc /home/tester/.bashrc
-    cp /home/tester/project/.bash_profile /home/tester/.bash_profile
-    cp /home/tester/project/.blerc /home/tester/.blerc
-    cp -r /home/tester/project/.bashrc.d /home/tester/.bashrc.d
-    chown -R tester:tester /home/tester
-    exec su - tester"
+
+    # Copy CWD contents to test user home and fix permissions
+    cp -a /host_cwd/. /home/tester/
+    chown -R test:test /home/tester
+
+    echo -e "\nEnvironment ready. Handing over to user: test"
+
+    # Switch to test user and launch interactive shell
+    cd /home/test
+    exec su - test
+    '
 }

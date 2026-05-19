@@ -1,42 +1,72 @@
-shell_debian_amd64() { _shell_debian_logic "amd64"; }
-shell_debian_arm64() { _shell_debian_logic "arm64"; }
+shell_debian_amd64() { _shell_debian_container "amd64"; }
+shell_debian_arm64() { _shell_debian_container "arm64"; }
 
-_shell_debian_logic() {
-  local arch=$1
-  CNAME="test-shell-debian-$arch"
-  podman rm -f $CNAME 2>/dev/null || true
-  podman run --rm -it \
-    --platform "linux/$arch" \
-    -v "$PWD:/workspace:Z" \
-    --name $CNAME debian:stable bash -c '
+_shell_debian_container() {
+  local target_arch="${1:-amd64}"
+  echo "Starting Debian Linux container (${target_arch})..."
+
+  podman run --rm -i \
+    --arch "$target_arch" \
+    --network=host \
+    -v "$PWD":/host_cwd:z \
+    docker.io/library/debian:latest \
+    /bin/bash -c '
+    # Prevent apt from prompting for timezone/keyboard configurations
     export DEBIAN_FRONTEND=noninteractive
-    
-    echo "1. Updating apt and installing dependencies..."
-    apt-get update >/dev/null
-    apt-get install -y bash git curl wget tar gzip xz-utils unzip zip bzip2 passwd sudo \
-      procps make gcc g++ grep sed gawk findutils coreutils libffi-dev libyaml-dev libssl-dev \
-      zlib1g-dev libreadline-dev libgmp-dev lua5.4 liblua5.4-dev luarocks jq tmux \
-      imagemagick ghostscript pandoc sqlite3 bat btop ncdu pkg-config \
-      libfontconfig1-dev libfreetype6-dev libharfbuzz-dev libsqlite3-dev \
-      libicu-dev libcurl4-openssl-dev libpng-dev libgraphite2-dev \
-      autoconf bison re2c libxml2-dev libonig-dev libzip-dev >/dev/null
 
-    echo "2. Creating tester user and granting sudo..."
+    # Update package database and install dependencies
+    apt-get update && apt-get install -y build-essential git make curl \
+      wget tar xz-utils libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
+      libsqlite3-dev libffi-dev pkg-config re2c bison autoconf \
+      libxml2-dev libonig-dev libcurl4-openssl-dev libzip-dev gettext \
+      libicu-dev libpng-dev libjpeg-dev libfreetype6-dev
+
+    # Create tester user
     useradd -m -s /bin/bash tester
-    
-    # THE FIX: Grant passwordless sudo to tester
-    echo "tester ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-    
-    echo "3. Copying files and fixing permissions..."
-    cp -r /workspace /home/tester/project
-    cp /home/tester/project/.bashrc /home/tester/.bashrc
-    cp /home/tester/project/.bash_profile /home/tester/.bash_profile
-    cp /home/tester/project/.blerc /home/tester/.blerc
-    cp -r /home/tester/project/.bashrc.d /home/tester/.bashrc.d
-    
+
+    # Copy CWD contents to test user home and fix permissions
+    cp -a /host_cwd/. /home/tester/
     chown -R tester:tester /home/tester
 
-    echo "4. Switching to tester and dropping to interactive shell..."
-    exec su - tester
-'
+    echo -e "\nEnvironment ready. Handing over to user: tester"
+    cd /home/tester
+
+    # Execute everything else dynamically as the tester user
+    # Using a heredoc (EOF) entirely avoids the SC2026 single-quote nesting issue
+    su - tester << "EOF"
+        echo "=== Running Installation Tools ==="
+        tool pkg install all
+        tool sync all
+
+        echo -e "\n=== Verifying Installed Programs ===\n"
+
+        # A clean, space-separated list of your tools
+        tools="fzf nvim starship carapace uv python pip node npm rustc cargo \
+               rustfmt clippy-driver go shellcheck shfmt ruby gem markdown-toc \
+               php composer java javac julia lua luarocks jq yq tmux magick \
+               gs lazygit delta pandoc sqlite3 bat eza zoxide btop ncdu tectonic"
+
+        for bin in $tools; do
+            # Dynamically determine the correct version flag
+            case "$bin" in
+                go)   flag="version" ;;
+                lua)  flag="-v" ;;
+                tmux) flag="-V" ;;
+                *)    flag="--version" ;;
+            esac
+
+            echo -n "[CHECK] $bin $flag -> "
+            
+            # Check if the command exists before executing to prevent ugly not found shell errors
+            if command -v "$bin" >/dev/null 2>&1; then
+                "$bin" $flag 2>&1 | head -n 1
+            else
+                echo "❌ FAILED / NOT INSTALLED"
+            fi
+            echo "----------------------------------------"
+        done
+
+        echo -e "\n=== Tests Complete. Exiting Container. ==="
+EOF
+    '
 }

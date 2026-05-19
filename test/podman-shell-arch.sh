@@ -1,33 +1,32 @@
-shell_arch_amd64() { _shell_arch_logic "amd64"; }
-shell_arch_arm64() { _shell_arch_logic "arm64"; }
+shell_arch_amd64() { _shell_arch_container "amd64"; }
+shell_arch_arm64() { _shell_arch_container "arm64"; }
 
-_shell_arch_logic() {
-  local arch=$1
-  CNAME="test-shell-arch-$arch"
-  podman rm -f $CNAME 2>/dev/null || true
-  podman run \
-    --rm -it \
-    --platform "linux/$arch" \
-    -v "$PWD:/workspace:Z" \
-    --name $CNAME archlinux:latest \
-    bash -c "
-    pacman -Sy --noconfirm --needed \
-    bash git curl wget tar gzip xz unzip zip bzip2 which \
-    shadow sudo procps-ng make gcc grep sed gawk findutils \
-    coreutils base-devel libffi libyaml openssl zlib readline \
-    gmp lua luarocks pkgconf fontconfig freetype2 harfbuzz \
-    jq tmux imagemagick ghostscript pandoc sqlite bat btop ncdu \
-    autoconf bison re2c libxml2 oniguruma libzip 1>/dev/null
+_shell_arch_container() {
+  local target_arch="${1:-amd64}"
+  echo "Starting Arch Linux container (${target_arch})..."
 
+  podman run --rm -it \
+    --arch "$target_arch" \
+    --network=host \
+    -v "$PWD":/host_cwd:z \
+    docker.io/library/archlinux:latest \
+    /bin/bash -c '
+    # Update package database and install dependencies
+    pacman -Syu --noconfirm base-devel git make curl wget tar xz \
+      openssl zlib bzip2 readline sqlite libffi pkgconf re2c bison \
+      libxml2 oniguruma libzip gettext icu libpng libjpeg-turbo freetype2
+
+    # Create tester user
     useradd -m -s /bin/bash tester
-    echo 'tester ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
-    cp -r /workspace /home/tester/project 
-    mkdir -p /home/tester/.config
-    cp /home/tester/project/.bashrc /home/tester/.bashrc
-    cp /home/tester/project/.bash_profile /home/tester/.bash_profile
-    cp /home/tester/project/.blerc /home/tester/.blerc
-    cp -r /home/tester/project/.bashrc.d /home/tester/.bashrc.d
-    cp /home/tester/project/.config/starship.toml /home/tester/.config
-    chown -R tester:tester /home/tester
-    su - tester -c 'exec bash -il'"
+
+    # Copy CWD contents to test user home and fix permissions
+    cp -a /host_cwd/. /home/tester/
+    chown -R test:test /home/tester
+
+    echo -e "\nEnvironment ready. Handing over to user: test"
+
+    # Switch to test user and launch interactive shell
+    cd /home/test
+    exec su - test
+    '
 }
