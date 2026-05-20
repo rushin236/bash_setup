@@ -1,0 +1,17 @@
+FROM registry.opensuse.org/opensuse/leap:latest
+
+RUN zypper --non-interactive refresh && \
+    zypper --non-interactive install --no-recommends --force-resolution \
+    gcc gcc-c++ make autoconf automake libtool bison re2c pkgconf patch gawk unzip \
+    findutils git curl tar xz gzip bzip2 zlib-devel libopenssl-devel sqlite3 \
+    sqlite3-devel readline-devel libxml2-devel libcurl-devel libzip-devel \
+    oniguruma-devel libtirpc-devel glibc-devel linux-glibc-devel \
+    ncurses-devel libicu-devel libpng-devel libjpeg-devel libwebp-devel \
+    libsodium-devel gmp-devel ca-certificates harfbuzz-devel \
+    graphite2-devel fontconfig-devel gd-devel pcre2-devel \
+    && zypper clean -a
+
+RUN useradd -m -s /bin/bash tester
+
+# Command to build container image
+# podman build -t my-amd64-opensuse-tester -f Dockerfile.amd64_opensuse

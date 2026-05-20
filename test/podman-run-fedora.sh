@@ -9,17 +9,18 @@ _run_fedora_container() {
     --arch "$target_arch" \
     --network=host \
     -v "$PWD":/host_cwd:z \
-    docker.io/library/fedora:latest \
+    localhost/my-amd64-fedora-tester:latest \
     /bin/bash -c '
     # Update package database and install dependencies
-    dnf install -y @development-tools util-linux git make curl wget tar xz \
-      openssl-devel zlib-devel bzip2-devel readline-devel sqlite-devel libffi-devel \
-      pkgconfig re2c bison autoconf libxml2-devel oniguruma-devel libcurl-devel \
-      libzip-devel gettext-devel libicu-devel libpng-devel libjpeg-turbo-devel \
-      freetype-devel gdbm-devel libwebp-devel libXpm-devel gcc-c++ automake libtool
+    # dnf install -y @development-tools util-linux git make curl wget tar xz gawk unzip \
+    #     openssl-devel zlib-devel bzip2-devel readline-devel sqlite-devel libffi-devel \
+    #     pkgconfig re2c bison autoconf libxml2-devel oniguruma-devel libcurl-devel \
+    #     libzip-devel gettext-devel libicu-devel libpng-devel libjpeg-turbo-devel \
+    #     freetype-devel gdbm-devel libwebp-devel libXpm-devel gcc-c++ automake libtool \
+    #     harfbuzz-devel graphite2-devel fontconfig-devel gd-devel pcre2-devel >/dev/null
 
     # Create tester user
-    useradd -m -s /bin/bash tester
+    # useradd -m -s /bin/bash tester
 
     # Copy CWD contents to test user home and fix permissions
     cp -a /host_cwd/. /home/tester/
@@ -35,15 +36,21 @@ _run_fedora_container() {
 
         echo "=== Running Installation Tools ==="
         tool pkg install all
-        MISE_VERBOSE=1 PHP_VERBOSE=1 tool sync all
+        tool sync all
+        # tool subpkg npm install all
+        # tool subpkg go install all
+        # tool subpkg cargo install all
+        # tool subpkg rustup install all
+        cat ~/.config/mise/config.toml
+        # tool sync php
 
         echo -e "\n=== Verifying Installed Programs ===\n"
 
         # A clean, space-separated list of your tools
         tools="fzf nvim starship carapace uv python pip node npm rustc cargo \
                rustfmt clippy-driver go shellcheck shfmt ruby gem markdown-toc \
-               php composer java javac julia lua luarocks jq yq tmux magick \
-               gs lazygit delta pandoc sqlite3 bat eza zoxide btop ncdu tectonic"
+               php composer java javac julia lua luarocks yq lazygit delta \
+               eza zoxide tectonic"
 
         for bin in $tools; do
             # Dynamically determine the correct version flag
@@ -58,7 +65,7 @@ _run_fedora_container() {
             
             # Check if the command exists before executing to prevent ugly not found shell errors
             if command -v "$bin" >/dev/null 2>&1; then
-                "$bin" $flag 2>&1 | head -n 1
+                "$bin" $flag 2>&1
             else
                 echo "❌ FAILED / NOT INSTALLED"
             fi

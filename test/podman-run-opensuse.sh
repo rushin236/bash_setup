@@ -9,22 +9,23 @@ _run_opensuse_container() {
     --arch "$target_arch" \
     --network=host \
     -v "$PWD":/host_cwd:z \
-    registry.opensuse.org/opensuse/leap:latest \
+    localhost/my-amd64-opensuse-tester:latest \
     /bin/bash -c '
     # Update package database and install dependencies
-    zypper --non-interactive refresh
+    # zypper --non-interactive refresh
 
     # 2. Install ONLY the exact required tools (no patterns, no dist-upgrade, no recommended bloat)
-    zypper --non-interactive install --no-recommends --force-resolution \
-      gcc gcc-c++ make autoconf automake libtool bison re2c pkgconf patch gawk \
-      findutils git curl tar xz gzip bzip2 zlib-devel libopenssl-devel sqlite3 \
-      sqlite3-devel readline-devel libxml2-devel libcurl-devel libzip-devel \
-      oniguruma-devel libtirpc-devel glibc-devel linux-glibc-devel \
-      ncurses-devel libicu-devel libpng-devel libjpeg-devel \
-      libwebp-devel libsodium-devel gmp-devel ca-certificates
+    # zypper --non-interactive install --no-recommends --force-resolution \
+    #     gcc gcc-c++ make autoconf automake libtool bison re2c pkgconf patch gawk unzip \
+    #     findutils git curl tar xz gzip bzip2 zlib-devel libopenssl-devel sqlite3 \
+    #     sqlite3-devel readline-devel libxml2-devel libcurl-devel libzip-devel \
+    #     oniguruma-devel libtirpc-devel glibc-devel linux-glibc-devel \
+    #     ncurses-devel libicu-devel libpng-devel libjpeg-devel libwebp-devel \
+    #     libsodium-devel gmp-devel ca-certificates harfbuzz-devel \
+    #     graphite2-devel fontconfig-devel gd-devel pcre2-devel >/dev/null
 
     # Create tester user
-    useradd -m -s /bin/bash tester
+    # useradd -m -s /bin/bash tester
 
     # Copy CWD contents to test user home and fix permissions
     cp -a /host_cwd/. /home/tester/
@@ -40,15 +41,21 @@ _run_opensuse_container() {
 
         echo "=== Running Installation Tools ==="
         tool pkg install all
-        MISE_VERBOSE=1 PHP_VERBOSE=1 tool sync all
+        tool sync all
+        # tool subpkg npm install all
+        # tool subpkg go install all
+        # tool subpkg cargo install all
+        # tool subpkg rustup install all
+        cat ~/.config/mise/config.toml
+        # tool sync php
 
         echo -e "\n=== Verifying Installed Programs ===\n"
 
         # A clean, space-separated list of your tools
         tools="fzf nvim starship carapace uv python pip node npm rustc cargo \
                rustfmt clippy-driver go shellcheck shfmt ruby gem markdown-toc \
-               php composer java javac julia lua luarocks jq yq tmux magick \
-               gs lazygit delta pandoc sqlite3 bat eza zoxide btop ncdu tectonic"
+               php composer java javac julia lua luarocks yq lazygit delta \
+               eza zoxide tectonic"
 
         for bin in $tools; do
             # Dynamically determine the correct version flag
@@ -63,7 +70,7 @@ _run_opensuse_container() {
             
             # Check if the command exists before executing to prevent ugly not found shell errors
             if command -v "$bin" >/dev/null 2>&1; then
-                "$bin" $flag 2>&1 | head -n 1
+                "$bin" $flag 2>&1
             else
                 echo "❌ FAILED / NOT INSTALLED"
             fi

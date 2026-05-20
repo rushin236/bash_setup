@@ -9,12 +9,14 @@ _run_arch_container() {
     --arch "$target_arch" \
     --network=host \
     -v "$PWD":/host_cwd:z \
-    docker.io/library/archlinux:latest \
+    localhost/my-amd64-archlinux-tester:latest \
     /bin/bash -c '
     # Update package database and install dependencies
-    pacman -Syu --noconfirm base-devel git make curl wget tar xz \
-      openssl zlib bzip2 readline sqlite libffi pkgconf re2c bison \
-      libxml2 oniguruma libzip gettext icu libpng libjpeg-turbo freetype2
+    # pacman -Syu --noconfirm base-devel git make curl wget tar \
+    #     xz gawk unzip openssl zlib bzip2 readline sqlite libffi \
+    #     pkgconf re2c bison libxml2 oniguruma libzip gettext \
+    #     harfbuzz harfbuzz-icu graphite2 fontconfig icu libpng \
+    #     libjpeg-turbo freetype2 gd pcre2 >/dev/null
 
     # Create tester user
     useradd -m -s /bin/bash tester
@@ -33,15 +35,21 @@ _run_arch_container() {
 
         echo "=== Running Installation Tools ==="
         tool pkg install all
-        MISE_VERBOSE=1 PHP_VERBOSE=1 tool sync all
+        tool sync all
+        # tool subpkg npm install all
+        # tool subpkg go install all
+        # tool subpkg cargo install all
+        # tool subpkg rustup install all
+        cat ~/.config/mise/config.toml
+        # tool sync php
 
         echo -e "\n=== Verifying Installed Programs ===\n"
 
         # A clean, space-separated list of your tools
         tools="fzf nvim starship carapace uv python pip node npm rustc cargo \
                rustfmt clippy-driver go shellcheck shfmt ruby gem markdown-toc \
-               php composer java javac julia lua luarocks jq yq tmux magick \
-               gs lazygit delta pandoc sqlite3 bat eza zoxide btop ncdu tectonic"
+               php composer java javac julia lua luarocks yq lazygit delta \
+               eza zoxide tectonic"
 
         for bin in $tools; do
             # Dynamically determine the correct version flag
@@ -56,7 +64,7 @@ _run_arch_container() {
             
             # Check if the command exists before executing to prevent ugly not found shell errors
             if command -v "$bin" >/dev/null 2>&1; then
-                "$bin" $flag 2>&1 | head -n 1
+                "$bin" $flag 2>&1
             else
                 echo "❌ FAILED / NOT INSTALLED"
             fi
