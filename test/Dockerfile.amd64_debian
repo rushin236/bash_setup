@@ -1,0 +1,17 @@
+FROM docker.io/library/debian:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential autoconf bison re2c pkg-config ca-certificates \
+    git curl wget make tar xz-utils gzip gawk unzip \
+    libxml2-dev libssl-dev libicu-dev libzip-dev libonig-dev \
+    libcurl4-openssl-dev libpng-dev libjpeg-dev libfreetype-dev \
+    libreadline-dev libbz2-dev libsqlite3-dev libgd-dev libpcre2-dev \
+    libharfbuzz-dev libgraphite2-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash tester
+
+# Command to build container image
+# podman build -t my-amd64-debian-tester -f Dockerfile.amd64_debian

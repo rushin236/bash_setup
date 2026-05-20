@@ -9,20 +9,22 @@ _run_debian_container() {
     --arch "$target_arch" \
     --network=host \
     -v "$PWD":/host_cwd:z \
-    docker.io/library/debian:latest \
+    localhost/my-amd64-debian-tester:latest \
     /bin/bash -c '
     # Prevent apt from prompting for timezone/keyboard configurations
-    export DEBIAN_FRONTEND=noninteractive
+    # export DEBIAN_FRONTEND=noninteractive
 
     # Update package database and install dependencies
-    apt-get update && apt-get install -y build-essential git make curl \
-      wget tar xz-utils libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
-      libsqlite3-dev libffi-dev pkg-config re2c bison autoconf \
-      libxml2-dev libonig-dev libcurl4-openssl-dev libzip-dev gettext \
-      libicu-dev libpng-dev libjpeg-dev libfreetype6-dev
+    # apt-get update && apt-get install -y --no-install-recommends \
+    #     build-essential autoconf bison re2c pkg-config ca-certificates \
+    #     git curl wget make tar xz-utils gzip gawk unzip \
+    #     libxml2-dev libssl-dev libicu-dev libzip-dev libonig-dev \
+    #     libcurl4-openssl-dev libpng-dev libjpeg-dev libfreetype-dev \
+    #     libreadline-dev libbz2-dev libsqlite3-dev libgd-dev libpcre2-dev \
+    #     libharfbuzz-dev libgraphite2-dev >/dev/null
 
     # Create tester user
-    useradd -m -s /bin/bash tester
+    # useradd -m -s /bin/bash tester
 
     # Copy CWD contents to test user home and fix permissions
     cp -a /host_cwd/. /home/tester/
@@ -38,15 +40,21 @@ _run_debian_container() {
 
         echo "=== Running Installation Tools ==="
         tool pkg install all
-        MISE_VERBOSE=1 PHP_VERBOSE=1 tool sync all
+        tool sync all
+        # tool subpkg npm install all
+        # tool subpkg go install all
+        # tool subpkg cargo install all
+        # tool subpkg rustup install all
+        cat ~/.config/mise/config.toml
+        # tool sync php
 
         echo -e "\n=== Verifying Installed Programs ===\n"
 
         # A clean, space-separated list of your tools
         tools="fzf nvim starship carapace uv python pip node npm rustc cargo \
                rustfmt clippy-driver go shellcheck shfmt ruby gem markdown-toc \
-               php composer java javac julia lua luarocks jq yq tmux magick \
-               gs lazygit delta pandoc sqlite3 bat eza zoxide btop ncdu tectonic"
+               php composer java javac julia lua luarocks yq lazygit delta \
+               eza zoxide tectonic"
 
         for bin in $tools; do
             # Dynamically determine the correct version flag
@@ -61,7 +69,7 @@ _run_debian_container() {
             
             # Check if the command exists before executing to prevent ugly not found shell errors
             if command -v "$bin" >/dev/null 2>&1; then
-                "$bin" $flag 2>&1 | head -n 1
+                "$bin" $flag 2>&1
             else
                 echo "❌ FAILED / NOT INSTALLED"
             fi

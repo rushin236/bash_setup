@@ -1,0 +1,13 @@
+FROM docker.io/library/archlinux:latest
+
+RUN pacman -Syu --noconfirm base-devel git make curl wget tar \
+    xz gawk unzip openssl zlib bzip2 readline sqlite libffi \
+    pkgconf re2c bison libxml2 oniguruma libzip gettext \
+    harfbuzz harfbuzz-icu graphite fontconfig icu libpng \
+    libjpeg-turbo freetype2 gd pcre2 \
+    && pacman -Scc --noconfirm
+
+RUN useradd -m -s /bin/bash tester
+
+# Command to build container image
+# podman build -t my-amd64-archlinux-tester -f Dockerfile.amd64_archlinux
