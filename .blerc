@@ -103,3 +103,41 @@ ble-bind -m vi_xmap -s 'SP p' 'd p'
 # Conda toggle
 # ble-bind -m vi_imap -f 'M-t' my_conda_toggle
 # ble-bind -m vi_nmap -f 'M-t' my_conda_toggle
+
+# --- 3. Python venv keymaps ---
+# --- Python Venv ---
+
+function ble/widget/venv_activate_cwd {
+  ble/term/leave-for-widget
+
+  if ! venv_activate_cwd; then
+    ble/term/enter-for-widget
+    ble/widget/print -s "No Python venv found in current directory"
+    return 1
+  fi
+
+  ble/term/enter-for-widget
+  ble/prompt/clear
+  ble/prompt/update
+  ble/textarea#redraw
+}
+
+function ble/widget/venv_deactivate {
+  ble/term/leave-for-widget
+
+  venv_deactivate
+
+  ble/term/enter-for-widget
+  ble/prompt/clear
+  ble/prompt/update
+  ble/textarea#redraw
+}
+
+# --- Python Venv Keybinds ---
+# Ctrl-x v -> activate venv from current directory
+ble-bind -m vi_imap -f 'C-x v' venv_activate_cwd
+ble-bind -m vi_nmap -f 'C-x v' venv_activate_cwd
+
+# Ctrl-x d -> deactivate current venv
+ble-bind -m vi_imap -f 'C-x d' venv_deactivate
+ble-bind -m vi_nmap -f 'C-x d' venv_deactivate
